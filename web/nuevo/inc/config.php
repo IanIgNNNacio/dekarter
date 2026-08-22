@@ -30,6 +30,24 @@ define('DK_BASE', '/nuevo/');
 define('DK_BORRADOR', true);   // true ⇒ noindex: Google no indexa el borrador
 
 /*
+ * Los errores se registran, nunca se muestran.
+ *
+ * Se fija acá y no sólo en el .htaccess porque HostGator corre PHP por LSAPI:
+ * las directivas php_flag de Apache se ignoran y display_errors queda como lo
+ * dejó el hosting. Un aviso de PHP en pantalla le regala al visitante la ruta
+ * absoluta del servidor, y al robot que sondea el formulario le confirma qué
+ * campo tocó.
+ *
+ * Para depurar en el hosting: poner DK_DEPURAR en true, mirar, y devolverlo a
+ * false. Nunca dejarlo en true.
+ */
+define('DK_DEPURAR', false);
+
+ini_set('display_errors', DK_DEPURAR ? '1' : '0');
+ini_set('log_errors', '1');
+error_reporting(DK_DEPURAR ? E_ALL : E_ALL & ~E_DEPRECATED);
+
+/*
  * Dirección canónica del sitio. Hoy el servidor responde igual en cuatro
  * direcciones (con y sin www, con y sin HTTPS), lo que para Google son cuatro
  * copias del mismo sitio compitiendo entre ellas. Se elige una y las otras tres

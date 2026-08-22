@@ -23,8 +23,14 @@ DirectoryIndex index.php
 
     # Quien llegue a /contacto.php se va a /contacto con un 301, para no tener
     # dos direcciones distintas mostrando la misma página.
+    #
+    # %1 ya trae la ruta completa desde la raíz del dominio —incluida la
+    # subcarpeta— porque THE_REQUEST es la petición cruda: "GET /nuevo/contacto.php".
+    # Por eso el destino es /%1 y no /nuevo/%1: con lo segundo quedaba
+    # /nuevo/nuevo/contacto. Como efecto útil, esta regla no hay que tocarla al
+    # mover el sitio a la raíz.
     RewriteCond %{THE_REQUEST} \s/+(.+?)\.php[\s?] [NC]
-    RewriteRule ^ /nuevo/%1 [R=301,L]
+    RewriteRule ^ /%1 [R=301,L]
 
     # Nada de acceso directo a los includes ni a la carpeta de trabajo.
     RewriteRule ^(inc|var)/ - [F,L]
