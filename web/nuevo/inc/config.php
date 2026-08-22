@@ -119,6 +119,11 @@ $DK = [
      */
     'email_de'      => 'web@dekarter.cl',
 
+    // Nombre visible del remitente: es lo que se lee en la bandeja de entrada,
+    // antes de la dirección. Sólo caracteres simples, sin comas ni tildes: van
+    // a una cabecera de correo y hay clientes viejos que las rompen.
+    'email_de_nombre' => 'Web Dekarter',
+
     /*
      * Copia directa del aviso, opcional.
      *
