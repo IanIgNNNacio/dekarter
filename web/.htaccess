@@ -1,8 +1,12 @@
 # =============================================================================
 #  .htaccess para la RAÍZ de public_html — arreglo inmediato del sitio actual
 #
-#  Este archivo NO está instalado todavía. Arregla tres cosas del sitio que hoy
-#  está en producción, sin tocar una línea de index.php:
+#  INSTALADO Y VERIFICADO el 22-08-2026. Comprobado en vivo:
+#    · http://www.dekarter.cl/index.php  →  https://dekarter.cl/index.php
+#    · dekarter.cl/images/engranajes.psd  →  403
+#    · imágenes con Cache-Control (antes no mandaba ninguna cabecera de caché)
+#
+#  Arregla tres cosas del sitio en producción, sin tocar una línea de index.php:
 #
 #    1. Hoy https://dekarter.cl, http://dekarter.cl, https://www.dekarter.cl y
 #       http://www.dekarter.cl devuelven las cuatro un 200. Para Google son
