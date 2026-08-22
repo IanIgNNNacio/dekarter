@@ -37,42 +37,70 @@ $v = [
 $fc['valores'] = $v;
 
 // --- Capas silenciosas ----------------------------------------------------
-// Cuando lo que hay al otro lado es un robot, se le muestra la página de
-// gracias sin enviar nada. Que crea que funcionó: si le devolviéramos un error,
-// el operador del bot ajustaría el script hasta pasar.
+// Cuando al otro lado hay un robot, se le muestra la página de gracias sin
+// enviar nada. Que crea que funcionó: si le devolviéramos un error, el operador
+// del bot ajustaría el script hasta pasar.
+//
+// Ojo con qué se descarta en silencio. Descartar callado a una persona real es
+// mucho peor que dejar pasar un correo basura: el cliente ve «gracias», se va
+// tranquilo, y su consulta no existió nunca. Por eso acá sólo van las señales
+// que una persona no puede activar sin querer.
 
 $es_robot = false;
+$motivo   = '';
 
-// 1. Campo trampa relleno
+// 1. Campo trampa relleno. Es invisible: nadie lo llena a mano.
 if (trim((string) ($_POST['sitio_web'] ?? '')) !== '') {
     $es_robot = true;
+    $motivo   = 'trampa';
 }
 
-// 2. Token ausente, falsificado o enviado en menos de 4 segundos
+// 2. Token ausente o con firma falsa: el POST no viene de un formulario nuestro.
 $motivo_token = dk_token_invalido((string) ($_POST['ficha'] ?? ''));
-if ($motivo_token !== null && $motivo_token !== 'formulario_vencido') {
+if ($motivo_token === 'token_malformado' || $motivo_token === 'firma_invalida') {
     $es_robot = true;
+    $motivo   = $motivo_token;
 }
 
-// 3. Contenido con olor a spam
-if (dk_huele_a_spam($v['mensaje'], $v['nombre'] . ' ' . $v['empresa']) !== null) {
+// 3. Contenido con olor a spam.
+$motivo_spam = dk_huele_a_spam($v['mensaje'], $v['nombre'] . ' ' . $v['empresa']);
+if ($motivo_spam !== null) {
     $es_robot = true;
+    $motivo   = $motivo_spam;
 }
 
 if ($es_robot) {
+    dk_bitacora('descartado:' . $motivo, $v['email']);
     header('Location: ' . u('gracias'), true, 303);
     exit;
 }
 
 // --- Errores que sí se muestran ------------------------------------------
 
+/*
+ * Enviado demasiado rápido: ANTES esto se descartaba en silencio, y estaba mal.
+ * Con el autocompletado del navegador una persona real llena y envía en dos
+ * segundos sin ningún problema, y se quedaba con la página de gracias y sin
+ * correo enviado. Ahora se le pide reintentar, que es la verdad.
+ *
+ * No debilita mucho la defensa: al robot le siguen quedando el campo trampa,
+ * la firma del token y la heurística de contenido, que son las capas que de
+ * verdad filtran.
+ */
+if ($motivo_token === 'demasiado_rapido') {
+    $fc['errores']['general'] = 'Se envió demasiado rápido y el sistema lo tomó por un robot. Revisa que los datos estén bien y vuelve a apretar «Enviar la consulta»: esta vez sale.';
+    dk_bitacora('reintento:muy_rapido', $v['email']);
+}
+
 // Una pestaña abierta desde ayer: la persona es real, sólo hay que reintentar.
 if ($motivo_token === 'formulario_vencido') {
     $fc['errores']['general'] = 'El formulario estuvo abierto demasiado tiempo y venció por seguridad. Vuelve a apretar «Enviar» y esta vez sí sale.';
+    dk_bitacora('reintento:vencido', $v['email']);
 }
 
 if (dk_limite_alcanzado()) {
     $fc['errores']['general'] = 'Ya recibimos varios mensajes desde tu conexión en la última hora. Si es urgente, escríbenos directo por WhatsApp al ' . $DK['fono_visible'] . '.';
+    dk_bitacora('frenado:limite_ip', $v['email']);
 }
 
 if (mb_strlen($v['nombre']) < 3) {
@@ -93,6 +121,11 @@ if (mb_strlen($v['mensaje']) < 15) {
 }
 
 if ($fc['errores'] !== []) {
+    // Sólo los errores de campo: los de arriba ya quedaron anotados.
+    $campos = array_diff(array_keys($fc['errores']), ['general']);
+    if ($campos !== []) {
+        dk_bitacora('validacion:' . implode('+', $campos), $v['email']);
+    }
     return;
 }
 
@@ -115,31 +148,46 @@ $cuerpo = "Nuevo mensaje desde el formulario de dekarter.cl\n"
     . 'Recibido: ' . date('d-m-Y H:i') . " (hora de Chile)\n";
 
 /*
- * El remitente TIENE que ser una dirección del propio dominio. Si se pone el
- * correo del visitante en From:, el servidor de destino ve un dominio ajeno
- * enviado desde una IP que su SPF no autoriza, y el mensaje se va a spam o
- * rebota. El correo del visitante va en Reply-To, que es donde sirve: apretar
+ * Remitente.
+ *
+ * Tiene que ser una dirección del propio dominio. Si se pusiera el correo del
+ * visitante en From:, el servidor de destino vería un dominio ajeno enviado
+ * desde una IP que su SPF no autoriza, y el mensaje se iría a spam o rebotaría.
+ * El correo del visitante va en Reply-To, que es donde sirve: apretar
  * «Responder» le contesta a él.
+ *
+ * Y tiene que ser una dirección que EXISTA. Antes acá iba `web@dekarter.cl`,
+ * que nunca se creó como casilla: Exim rechaza usarla como remitente del sobre
+ * y el envío falla completo. Se usa la casilla de ventas, que es la misma a la
+ * que llega el correo y por lo tanto existe seguro.
  */
-$de = 'web@' . preg_replace('~^https?://(www\.)?~', '', DK_DOMINIO);
+$de = $DK['email'];
 
 $cabeceras = [
     'From: Sitio Dekarter <' . $de . '>',
-    'Reply-To: ' . $v['nombre'] . ' <' . $v['email'] . '>',
+    'Reply-To: ' . dk_limpia_cabecera($v['nombre']) . ' <' . $v['email'] . '>',
     'Content-Type: text/plain; charset=UTF-8',
     'Content-Transfer-Encoding: 8bit',
     'X-Mailer: dekarter.cl',
 ];
 
-// El 5.º parámetro fija el remitente del sobre (Return-Path). Sin él, Exim usa
-// el usuario del sistema y algunos filtros lo castigan.
-$enviado = @mail(
-    $DK['email'],
-    '=?UTF-8?B?' . base64_encode($asunto) . '?=',
-    $cuerpo,
-    implode("\r\n", $cabeceras),
-    '-f' . $de
-);
+$asunto_mime = '=?UTF-8?B?' . base64_encode($asunto) . '?=';
+$cabeceras_txt = implode("\r\n", $cabeceras);
+
+/*
+ * El 5.º parámetro fija el remitente del sobre (Return-Path). Ayuda con los
+ * filtros, pero hay hosting que lo prohíbe y hace fallar la llamada completa.
+ * Se intenta con él y, si falla, se reintenta sin él: vale más un correo
+ * entregado que un Return-Path prolijo.
+ */
+$enviado = @mail($DK['email'], $asunto_mime, $cuerpo, $cabeceras_txt, '-f' . $de);
+
+if (!$enviado) {
+    $enviado = @mail($DK['email'], $asunto_mime, $cuerpo, $cabeceras_txt);
+    if ($enviado) {
+        dk_bitacora('enviado:sin_envelope', $v['email']);
+    }
+}
 
 if (!$enviado) {
     // Nunca se pierde un contacto: si el correo falla, queda en disco.
@@ -150,12 +198,15 @@ if (!$enviado) {
         FILE_APPEND | LOCK_EX
     );
 
+    dk_bitacora('FALLO:mail', $v['email']);
+
     $fc['errores']['general'] = 'No pudimos enviar el mensaje por un problema del servidor de correo. '
         . 'Escríbenos por WhatsApp al ' . $DK['fono_visible'] . ' o a ' . $DK['email'] . '.';
     return;
 }
 
 dk_anota_envio();
+dk_bitacora('enviado', $v['email']);
 
 header('Location: ' . u('gracias'), true, 303);
 exit;

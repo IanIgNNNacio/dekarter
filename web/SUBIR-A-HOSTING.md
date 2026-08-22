@@ -97,6 +97,39 @@ indexe todavía. Si no, ve la dirección rara y pregunta.
 | El formulario rechaza todo | `var/` sin permiso de escritura. Poner 755 o 775. |
 | Página en blanco | Error de PHP oculto. Poner `DK_DEPURAR` en `true` en `inc/config.php`, recargar, leer el error, **y devolverlo a `false`**. |
 | Sale «El formulario estuvo abierto demasiado tiempo» | Normal: la pestaña llevaba más de 3 horas abierta. Apretar Enviar de nuevo. |
+| Sale «Se envió demasiado rápido» | Normal: pasaron menos de 3 segundos entre abrir la página y enviar. Apretar Enviar otra vez y sale. |
+
+## La bitácora del formulario
+
+Cada envío deja una línea en `public_html/nuevo/var/registro.log`. Se baja por
+FileZilla y se lee directo:
+
+```
+2026-08-22 09:14:02  enviado                 a1b2c3d4e5f6a7b8  juan@minera.cl
+2026-08-22 11:03:55  descartado:trampa       9f8e7d6c5b4a3021  bot@spam.ru
+2026-08-22 11:47:10  reintento:muy_rapido    a1b2c3d4e5f6a7b8  pedro@ejemplo.cl
+2026-08-22 12:20:31  FALLO:mail              33aa55bb77cc99dd  ana@constructora.cl
+```
+
+Qué significa cada resultado:
+
+| Resultado | Qué pasó |
+|---|---|
+| `enviado` | El correo salió. |
+| `enviado:sin_envelope` | Salió, pero al segundo intento. Funciona; el hosting no acepta fijar el Return-Path. |
+| `descartado:trampa` | Robot: llenó el campo invisible. |
+| `descartado:token_malformado` / `firma_invalida` | Robot: POST directo, nunca cargó la página. |
+| `descartado:senuelo:seo` | Spam de posicionamiento. |
+| `reintento:muy_rapido` / `reintento:vencido` | Persona real, se le pidió reenviar. |
+| `frenado:limite_ip` | Más de 5 envíos en una hora desde la misma conexión. |
+| `validacion:email` | Persona real, dejó un campo mal. |
+| **`FALLO:mail`** | **El correo no salió.** El mensaje completo queda guardado en `var/contactos-no-enviados.txt`: **ahí está el contacto, no se perdió.** |
+
+Sólo se guarda la fecha, el resultado, un hash de la IP y el correo. El mensaje
+no queda en la bitácora.
+
+Si el formulario vuelve a fallar, bájame este archivo y sé exactamente qué pasó
+sin tener que adivinar.
 
 Para revertir todo: borrar la carpeta `public_html/nuevo/`. El sitio actual
 nunca se tocó.

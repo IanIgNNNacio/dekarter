@@ -25,7 +25,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/config.php';
 
-const DK_ESPERA_MINIMA   = 4;      // segundos
+const DK_ESPERA_MINIMA   = 3;      // segundos
 const DK_ESPERA_MAXIMA   = 10800;  // 3 horas
 const DK_LIMITE_ENVIOS   = 5;      // por IP
 const DK_LIMITE_VENTANA  = 3600;   // segundos
@@ -191,6 +191,38 @@ function dk_limite_alcanzado(): bool
 function dk_anota_envio(): void
 {
     dk_registro_envios(true);
+}
+
+// ---------------------------------------------------------------------------
+// Bitácora
+// ---------------------------------------------------------------------------
+
+/**
+ * Deja constancia de cómo terminó cada envío.
+ *
+ * Sin esto, cuando alguien dice «el formulario no funciona» no hay manera de
+ * saber si el correo falló, si la validación lo rechazó o si las defensas lo
+ * tomaron por robot: los tres casos se ven igual desde el navegador. Con la
+ * bitácora, basta leer una línea.
+ *
+ * Guarda el correo de quien escribió, porque es justamente el dato que se
+ * necesita para recuperar un contacto perdido. No guarda el mensaje ni la IP.
+ */
+function dk_bitacora(string $resultado, string $correo = ''): void
+{
+    if (!is_dir(DK_VAR) && !@mkdir(DK_VAR, 0700, true)) {
+        return;
+    }
+
+    $linea = sprintf(
+        "%s  %-22s  %s  %s\n",
+        date('Y-m-d H:i:s'),
+        $resultado,
+        dk_huella_ip(),
+        $correo
+    );
+
+    @file_put_contents(DK_VAR . '/registro.log', $linea, FILE_APPEND | LOCK_EX);
 }
 
 // ---------------------------------------------------------------------------

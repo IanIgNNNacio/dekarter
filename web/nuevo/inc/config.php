@@ -80,6 +80,24 @@ $DK = [
     'lng'           => -70.6816555,
     'mapa_url'      => 'https://maps.app.goo.gl/bPhbXXPehSQVCGzB8',
 
+    /*
+     * Embed del mapa. Esta URL sale de Google Maps → Compartir → Insertar un
+     * mapa, y es la misma que ya usaba el sitio anterior.
+     *
+     * Parece basura ilegible, pero el trozo que importa es
+     * `1s0x9662...:0xc691...!2sDos Sur 5010, 8561308 Conchalí…`: es el
+     * identificador del lugar más su etiqueta. Eso es lo que hace que el mapa
+     * muestre la dirección escrita junto al pin.
+     *
+     * Construirla a mano con `?q=lat,lng&output=embed` NO sirve: Google la
+     * resuelve a un pin pelado, sin etiqueta ni dirección. Con `?q=` y la
+     * dirección en texto tampoco: queda como una búsqueda, no como un lugar.
+     *
+     * Si algún día hay que regenerarla: abrir la ficha del taller en Google
+     * Maps, Compartir → Insertar un mapa, y copiar el `src` del iframe.
+     */
+    'mapa_embed'    => 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3331.5932901318624!2d-70.6816554879468!3d-33.38168259388429!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x9662c6f247a23f8d%3A0xc691cd84b14584d0!2sDos%20Sur%205010%2C%208561308%20Conchal%C3%AD%2C%20Regi%C3%B3n%20Metropolitana!5e0!3m2!1ses!2scl!4v1753837767733!5m2!1ses!2scl',
+
     'fono_e164'     => '+56939039509',
     'fono_visible'  => '+56 9 3903 9509',
     'email'         => 'ventas@dekarter.cl',
