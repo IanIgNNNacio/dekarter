@@ -1,0 +1,122 @@
+# =============================================================================
+#  Maestranza Dekarter — configuración de Apache
+#
+#  Mientras el sitio viva en la subcarpeta /nuevo/, este archivo va en esa
+#  subcarpeta y RewriteBase apunta ahí. Al pasar a la raíz del dominio hay que
+#  cambiar UNA línea: RewriteBase /nuevo/  ->  RewriteBase /
+#  (y poner DK_BASE en '/' y DK_BORRADOR en false dentro de inc/config.php).
+# =============================================================================
+
+Options -Indexes -MultiViews
+DirectoryIndex index.php
+
+# -----------------------------------------------------------------------------
+#  URLs sin extensión
+# -----------------------------------------------------------------------------
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteBase /nuevo/
+
+    # /contacto  ->  contacto.php  (sólo si el .php existe)
+    RewriteCond %{REQUEST_FILENAME}\.php -f
+    RewriteRule ^([^/.]+)/?$ $1.php [L]
+
+    # Quien llegue a /contacto.php se va a /contacto con un 301, para no tener
+    # dos direcciones distintas mostrando la misma página.
+    RewriteCond %{THE_REQUEST} \s/+(.+?)\.php[\s?] [NC]
+    RewriteRule ^ /nuevo/%1 [R=301,L]
+
+    # Nada de acceso directo a los includes ni a la carpeta de trabajo.
+    RewriteRule ^(inc|var)/ - [F,L]
+</IfModule>
+
+ErrorDocument 404 /nuevo/404.php
+
+# -----------------------------------------------------------------------------
+#  Nadie lee los archivos internos
+# -----------------------------------------------------------------------------
+<FilesMatch "\.(md|log|psd|bak|sql|ini|sh)$">
+    Require all denied
+</FilesMatch>
+
+<Files "error_log">
+    Require all denied
+</Files>
+
+# -----------------------------------------------------------------------------
+#  Compresión
+# -----------------------------------------------------------------------------
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css
+    AddOutputFilterByType DEFLATE application/javascript application/x-javascript
+    AddOutputFilterByType DEFLATE application/json application/ld+json
+    AddOutputFilterByType DEFLATE image/svg+xml
+</IfModule>
+
+# -----------------------------------------------------------------------------
+#  Caché del navegador
+#
+#  Las imágenes del sitio no cambian nunca (si cambian, cambia el nombre del
+#  archivo). El CSS y el JS llevan ?v=1 en el enlace, así que también se pueden
+#  cachear fuerte: para forzar una actualización se sube el número de versión.
+#  Hoy el servidor no manda NINGUNA cabecera de caché, así que cada visita
+#  vuelve a descargar todo.
+# -----------------------------------------------------------------------------
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresDefault                          "access plus 1 week"
+
+    ExpiresByType image/webp                "access plus 1 year"
+    ExpiresByType image/jpeg                "access plus 1 year"
+    ExpiresByType image/png                 "access plus 1 year"
+    ExpiresByType image/svg+xml             "access plus 1 year"
+    ExpiresByType text/css                  "access plus 1 year"
+    ExpiresByType application/javascript    "access plus 1 year"
+    ExpiresByType font/woff2                "access plus 1 year"
+
+    # El HTML se genera en PHP y puede cambiar: no se cachea.
+    ExpiresByType text/html                 "access plus 0 seconds"
+</IfModule>
+
+<IfModule mod_headers.c>
+    <FilesMatch "\.(webp|jpg|jpeg|png|svg|css|js|woff2)$">
+        Header set Cache-Control "public, max-age=31536000, immutable"
+    </FilesMatch>
+
+    <FilesMatch "\.php$">
+        Header set Cache-Control "no-cache, must-revalidate"
+    </FilesMatch>
+
+    # ---- Seguridad ----
+    # No adivines el tipo de archivo: respeta el Content-Type que mando.
+    Header always set X-Content-Type-Options "nosniff"
+    # Que nadie meta el sitio dentro de un iframe ajeno.
+    Header always set X-Frame-Options "SAMEORIGIN"
+    # Al salir del sitio, no filtres la ruta completa desde donde venía.
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+    # Apagar lo que el sitio no usa.
+    Header always set Permissions-Policy "geolocation=(), microphone=(), camera=(), payment=()"
+
+    Header unset X-Powered-By
+    Header unset Server
+</IfModule>
+
+# -----------------------------------------------------------------------------
+#  Tipos MIME que algunos hosting no traen configurados
+# -----------------------------------------------------------------------------
+<IfModule mod_mime.c>
+    AddType image/webp                  .webp
+    AddType image/svg+xml               .svg
+    AddType application/ld+json         .jsonld
+    AddCharset UTF-8                    .php .html .css .js .xml
+</IfModule>
+
+# -----------------------------------------------------------------------------
+#  PHP
+# -----------------------------------------------------------------------------
+<IfModule mod_php.c>
+    # Los errores se registran, nunca se muestran al visitante: un aviso de PHP
+    # en pantalla le regala al atacante la ruta absoluta del servidor.
+    php_flag display_errors off
+    php_flag log_errors on
+</IfModule>

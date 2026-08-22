@@ -1,0 +1,17 @@
+# Maestranza Dekarter — dekarter.cl
+#
+# OJO: este archivo sólo funciona si está en la RAÍZ del dominio. Mientras el
+# sitio viva en /nuevo/ no tiene efecto, y no hace falta: las páginas del
+# borrador ya llevan <meta name="robots" content="noindex"> desde PHP.
+#
+# Al pasar el sitio a la raíz, este archivo se copia a public_html/robots.txt.
+
+User-agent: *
+Allow: /
+
+# Nada que ganar indexando estas rutas
+Disallow: /gracias
+Disallow: /inc/
+Disallow: /var/
+
+Sitemap: https://dekarter.cl/sitemap.xml

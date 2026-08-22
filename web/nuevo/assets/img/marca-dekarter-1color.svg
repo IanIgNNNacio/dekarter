@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="20 12 88 96" width="88" height="96" role="img" aria-label="Maestranza Dekarter">
+  <title>Maestranza Dekarter — isotipo a un color</title>
+  <desc>Versión de un solo color para grabado, sello, bordado y fax. Usa currentColor: hereda el color del contexto.</desc>
+  <path fill="currentColor" fill-rule="evenodd"
+        d="M20 12 H60 A48 48 0 0 1 60 108 H20 Z
+           M38 30 H60 A30 30 0 0 1 60 90 H38 Z
+           M60 47 A13 13 0 0 1 60 73 A13 13 0 0 1 60 47 Z"/>
+</svg>
