@@ -1,0 +1,27 @@
+# Sistema
+Thumbs.db
+desktop.ini
+.DS_Store
+
+# Editores
+.vscode/
+.idea/
+*.swp
+*~
+
+# Credenciales y configuración local — NUNCA subir
+*.env
+.env*
+credenciales*
+*password*
+*.key
+*.pem
+web/nuevo/inc/config.local.php
+
+# Registros generados por el formulario en el servidor
+web/nuevo/var/
+*.log
+
+# Descargas temporales del FTP
+*.zip
+*.tar.gz
