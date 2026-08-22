@@ -147,21 +147,14 @@ $cuerpo = "Nuevo mensaje desde el formulario de dekarter.cl\n"
     . str_repeat('-', 52) . "\n"
     . 'Recibido: ' . date('d-m-Y H:i') . " (hora de Chile)\n";
 
-/*
- * Remitente.
- *
- * Tiene que ser una dirección del propio dominio. Si se pusiera el correo del
- * visitante en From:, el servidor de destino vería un dominio ajeno enviado
- * desde una IP que su SPF no autoriza, y el mensaje se iría a spam o rebotaría.
- * El correo del visitante va en Reply-To, que es donde sirve: apretar
- * «Responder» le contesta a él.
- *
- * Y tiene que ser una dirección que EXISTA. Antes acá iba `web@dekarter.cl`,
- * que nunca se creó como casilla: Exim rechaza usarla como remitente del sobre
- * y el envío falla completo. Se usa la casilla de ventas, que es la misma a la
- * que llega el correo y por lo tanto existe seguro.
- */
-$de = $DK['email'];
+// Remitente y destinatarios. El detalle de por qué es cada uno está en
+// config.php, junto a los valores.
+$de = $DK['email_de'];
+
+$destinos = $DK['email'];
+if ($DK['email_copia'] !== '') {
+    $destinos .= ', ' . $DK['email_copia'];
+}
 
 $cabeceras = [
     'From: Sitio Dekarter <' . $de . '>',
@@ -180,10 +173,10 @@ $cabeceras_txt = implode("\r\n", $cabeceras);
  * Se intenta con él y, si falla, se reintenta sin él: vale más un correo
  * entregado que un Return-Path prolijo.
  */
-$enviado = @mail($DK['email'], $asunto_mime, $cuerpo, $cabeceras_txt, '-f' . $de);
+$enviado = @mail($destinos, $asunto_mime, $cuerpo, $cabeceras_txt, '-f' . $de);
 
 if (!$enviado) {
-    $enviado = @mail($DK['email'], $asunto_mime, $cuerpo, $cabeceras_txt);
+    $enviado = @mail($destinos, $asunto_mime, $cuerpo, $cabeceras_txt);
     if ($enviado) {
         dk_bitacora('enviado:sin_envelope', $v['email']);
     }

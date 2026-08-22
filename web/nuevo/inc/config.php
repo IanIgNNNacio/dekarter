@@ -102,6 +102,36 @@ $DK = [
     'fono_visible'  => '+56 9 3903 9509',
     'email'         => 'ventas@dekarter.cl',
 
+    /*
+     * Remitente de los correos del formulario.
+     *
+     * Tiene que ser del propio dominio: si se pusiera el correo del visitante,
+     * el servidor de destino vería un dominio ajeno enviado desde una IP que su
+     * SPF no autoriza, y el mensaje se iría a spam. El visitante va en Reply-To.
+     *
+     * Se usa una dirección distinta de la de destino a propósito. Con `From` y
+     * `To` iguales, los filtros de spam suman puntos en contra: es un patrón
+     * típico de correo falsificado.
+     *
+     * PENDIENTE en cPanel: `web@dekarter.cl` no existe como casilla. Entrega
+     * bien —está probado—, pero los rebotes no llegan a ninguna parte. Conviene
+     * crearla como redirección a ventas@ para no perder los avisos de rebote.
+     */
+    'email_de'      => 'web@dekarter.cl',
+
+    /*
+     * Copia directa del aviso, opcional.
+     *
+     * El correo del dominio llega al instante al servidor de HostGator, pero de
+     * ahí a Gmail pasa por el recolector POP de Google, que consulta cuando
+     * quiere: se han medido demoras de 19 minutos. Poniendo acá la dirección de
+     * Gmail del cliente, el aviso del formulario le llega directo y al instante,
+     * sin depender de esa sincronización.
+     *
+     * Vacío = desactivado.
+     */
+    'email_copia'   => '',
+
     'horario_texto' => 'Lunes a viernes, 8:30 a 18:30',
     'horario_schema'=> ['Mo', 'Tu', 'We', 'Th', 'Fr'],
     'hora_abre'     => '08:30',
