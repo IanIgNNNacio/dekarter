@@ -264,6 +264,27 @@ function img(string $archivo): string
 }
 
 /**
+ * Ruta de un CSS o un JS, con la versión puesta sola.
+ *
+ * El .htaccess manda estos archivos con `immutable` y un año de caché, que es
+ * lo correcto para que un visitante que vuelve no los descargue de nuevo. El
+ * problema es el otro lado: si cambia el archivo, el navegador que ya lo tiene
+ * NO lo va a pedir nunca más, y el visitante se queda con el diseño viejo.
+ *
+ * Antes esto se resolvía con un `?v=1` escrito a mano, que había que acordarse
+ * de subir en cada cambio. Acordarse no es un plan. Ahora la versión es la fecha
+ * de modificación del archivo: cambia el archivo, cambia la dirección, y el
+ * navegador lo vuelve a pedir. Sin intervención.
+ */
+function activo(string $ruta): string
+{
+    $absoluta = DK_RAIZ . '/' . ltrim($ruta, '/');
+    $version  = is_file($absoluta) ? (string) filemtime($absoluta) : '1';
+
+    return u($ruta) . '?v=' . $version;
+}
+
+/**
  * Imprime una foto responsiva: WebP primero, JPEG de respaldo para navegadores
  * viejos, y srcset para que un teléfono no descargue la versión de escritorio.
  *

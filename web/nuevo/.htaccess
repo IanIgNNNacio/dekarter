@@ -62,11 +62,14 @@ ErrorDocument 404 /nuevo/404.php
 # -----------------------------------------------------------------------------
 #  Caché del navegador
 #
-#  Las imágenes del sitio no cambian nunca (si cambian, cambia el nombre del
-#  archivo). El CSS y el JS llevan ?v=1 en el enlace, así que también se pueden
-#  cachear fuerte: para forzar una actualización se sube el número de versión.
-#  Hoy el servidor no manda NINGUNA cabecera de caché, así que cada visita
-#  vuelve a descargar todo.
+#  Las imágenes del sitio no cambian nunca: si cambian, cambia el nombre del
+#  archivo. El CSS y el JS llevan pegada la fecha de modificación del archivo en
+#  la dirección (la función activo() de inc/config.php), así que también se
+#  pueden cachear a un año: cuando se editan, cambia la dirección y el navegador
+#  los vuelve a pedir solo.
+#
+#  El sitio actual no manda NINGUNA cabecera de caché: cada visita vuelve a
+#  descargar todo.
 # -----------------------------------------------------------------------------
 <IfModule mod_expires.c>
     ExpiresActive On

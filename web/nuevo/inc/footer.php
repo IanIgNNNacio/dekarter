@@ -61,6 +61,6 @@
   <span>Cotizar por WhatsApp</span>
 </a>
 
-<script src="<?= e(u('assets/js/dekarter.js')) ?>?v=1" defer></script>
+<script src="<?= e(activo('assets/js/dekarter.js')) ?>" defer></script>
 </body>
 </html>
