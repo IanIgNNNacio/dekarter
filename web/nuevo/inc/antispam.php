@@ -300,6 +300,27 @@ function dk_limpia_cabecera(string $valor, int $maximo = 120): string
     return mb_substr(trim($valor), 0, $maximo, 'UTF-8');
 }
 
+/**
+ * Prepara un nombre para el trozo visible de un `Reply-To` o un `From`.
+ *
+ * Quitar los saltos de línea ya evita la inyección de cabeceras, pero no basta
+ * para que la cabecera quede bien formada: los dos puntos, las comillas y los
+ * ángulos tienen significado propio ahí. Sin esto, un nombre como
+ * `Atacante\r\nBcc: alguien@x.cl` quedaba convertido en el texto
+ * `Atacante Bcc: alguien@x.cl` dentro del nombre visible — inofensivo, pero
+ * feo y capaz de confundir a algún cliente de correo antiguo.
+ *
+ * Se limpia y se entrecomilla, que es la forma correcta de encerrar un nombre.
+ */
+function dk_nombre_cabecera(string $nombre): string
+{
+    $limpio = dk_limpia_cabecera($nombre, 78);
+    $limpio = str_replace(['"', '<', '>', '\\', ':', ';', ','], ' ', $limpio);
+    $limpio = trim(preg_replace('~\s+~u', ' ', $limpio) ?? '');
+
+    return '"' . $limpio . '"';
+}
+
 /** Limpia un valor que va al CUERPO del correo: sólo se recorta y se normaliza. */
 function dk_limpia_cuerpo(string $valor, int $maximo = 4000): string
 {

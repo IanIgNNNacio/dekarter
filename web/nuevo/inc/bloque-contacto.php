@@ -188,16 +188,22 @@ $marca = static function (string $campo) use ($err): string {
       Escribir por WhatsApp
     </a>
 
+    <?php
+    /*
+     * El mapa se muestra siempre. Antes se cargaba al apretar un botón, para
+     * ahorrar el medio megabyte que arrastra el embed de Google; pero un
+     * visitante que quiere ver dónde queda el taller no debería tener que
+     * descubrir que hay que hacer clic.
+     *
+     * loading="lazy" recupera casi toda la ventaja: el mapa se descarga recién
+     * cuando el visitante llega a esa altura de la página, no al abrirla.
+     */
+    ?>
     <div class="mapa">
-      <button type="button" class="mapa-aviso"
-              data-src="<?= e($DK['mapa_embed']) ?>">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"
-             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0z"/><circle cx="12" cy="10" r="3"/>
-        </svg>
-        <strong>Ver el mapa</strong>
-        <span>Se carga al apretar, para que la página no arrastre el mapa de Google en cada visita.</span>
-      </button>
+      <iframe src="<?= e($DK['mapa_embed']) ?>"
+              title="Ubicación de <?= e($DK['nombre']) ?> en <?= e($DK['calle']) ?>, <?= e($DK['comuna']) ?>"
+              width="600" height="450" loading="lazy" allowfullscreen
+              referrerpolicy="no-referrer-when-downgrade"></iframe>
     </div>
   </div>
 

@@ -500,7 +500,7 @@ a:hover { color: var(--azul-osc); }
 .dato-valor a:hover { color: var(--azul); text-decoration: underline; }
 .dato-nota { grid-column: 2; font-size: .89rem; color: var(--tinta-3); }
 
-/* Mapa que sólo se descarga si el visitante lo pide */
+/* Mapa. Se descarga en diferido, cuando el visitante llega a esta altura. */
 .mapa {
   position: relative;
   margin-top: 26px;
@@ -511,26 +511,6 @@ a:hover { color: var(--azul-osc); }
   overflow: hidden;
 }
 .mapa iframe { width: 100%; height: 100%; border: 0; display: block; }
-.mapa-aviso {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  padding: 24px;
-  text-align: center;
-  background: var(--papel);
-  border: 0;
-  cursor: pointer;
-  font-family: inherit;
-  color: var(--tinta-2);
-}
-.mapa-aviso strong { font-family: var(--fuente-titulo); font-size: 1.05rem; color: var(--grafito); }
-.mapa-aviso span { font-size: .89rem; max-width: 34ch; }
-.mapa-aviso svg { width: 30px; height: 30px; color: var(--bronce); }
-.mapa-aviso:hover { background: #e9eef1; }
 
 /* ----------------------------------------------------- Cierre y pie ------ */
 

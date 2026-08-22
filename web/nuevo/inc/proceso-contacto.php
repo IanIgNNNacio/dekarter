@@ -158,7 +158,7 @@ if ($DK['email_copia'] !== '') {
 
 $cabeceras = [
     'From: ' . $DK['email_de_nombre'] . ' <' . $de . '>',
-    'Reply-To: ' . dk_limpia_cabecera($v['nombre']) . ' <' . $v['email'] . '>',
+    'Reply-To: ' . dk_nombre_cabecera($v['nombre']) . ' <' . $v['email'] . '>',
     'Content-Type: text/plain; charset=UTF-8',
     'Content-Transfer-Encoding: 8bit',
     'X-Mailer: dekarter.cl',

@@ -1,6 +1,6 @@
 /* Maestranza Dekarter — el único JavaScript del sitio.
-   Tres cosas: menú en móvil, mapa que se carga a pedido y envío del formulario
-   sin doble clic. Nada más. La página funciona completa sin este archivo. */
+   Dos cosas: el menú en móvil y evitar el doble envío del formulario. Nada más.
+   La página funciona completa sin este archivo. */
 
 (function () {
   'use strict';
@@ -24,28 +24,6 @@
         boton.setAttribute('aria-expanded', 'false');
         boton.focus();
       }
-    });
-  }
-
-  /* --- Mapa a pedido -----------------------------------------------------
-     El embed de Google Maps arrastra más de medio megabyte y cookies de
-     terceros en cada visita. Se carga sólo si el visitante lo pide. */
-
-  var avisoMapa = document.querySelector('.mapa-aviso');
-
-  if (avisoMapa) {
-    avisoMapa.addEventListener('click', function () {
-      var contenedor = avisoMapa.parentNode;
-      var marco = document.createElement('iframe');
-
-      marco.src = avisoMapa.getAttribute('data-src');
-      marco.title = 'Ubicación de Maestranza Dekarter en Dos Sur 5010, Conchalí';
-      marco.loading = 'lazy';
-      marco.referrerPolicy = 'no-referrer-when-downgrade';
-      marco.setAttribute('allowfullscreen', '');
-
-      contenedor.appendChild(marco);
-      avisoMapa.remove();
     });
   }
 
