@@ -28,3 +28,7 @@ web/nuevo/var/
 
 # Comprobaciones temporales de PHP: nunca al repo
 web/chk-*.php
+
+# Python
+__pycache__/
+*.pyc
