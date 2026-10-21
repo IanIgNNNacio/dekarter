@@ -163,8 +163,12 @@ def crear_carpeta(f, carpeta):
     if APLICAR:
         try:
             f.mkd(carpeta)
-        except ftplib.error_perm as e:
-            if not str(e).startswith("550"):    # 550 = ya existe
+        except ftplib.error_perm:
+            # El servidor responde 550 tanto si la carpeta ya existe como si no
+            # la pudo crear (por ejemplo, porque falta la carpeta padre). Antes
+            # todo 550 se tomaba como «ya existe» y el error pasaba de largo.
+            # Se distingue entrando en ella.
+            if not es_carpeta(f, carpeta):
                 raise
 
 
@@ -233,14 +237,26 @@ def main():
     respaldo = (ruta(RAIZ, f"_respaldo-sitio-anterior-{sello}") if RAIZ == "."
                 else f"respaldo-sitio-anterior-{sello}")
     subidas = archivos_locales()
-    carpetas = sorted({r.rsplit("/", 1)[0] for _, r in subidas if "/" in r}
-                      | {ruta(RAIZ, "var")}, key=len)
+    # Todas las carpetas, incluidas las intermedias como assets/: no tiene
+    # archivos propios, así que no salía de las rutas de los archivos y nunca
+    # se creaba. Se ordenan por profundidad para crear siempre el padre antes.
+    carpetas = set()
+    for _, r in subidas + [("", ruta(RAIZ, "var", "x"))]:
+        partes = r.split("/")[:-1]
+        for i in range(1, len(partes) + 1):
+            carpetas.add("/".join(partes[:i]))
+    carpetas = sorted(carpetas, key=lambda c: c.count("/"))
 
     # 1-2. respaldo
-    log(f"\n[1] Carpeta de respaldo: /{respaldo}/")
-    crear_carpeta(f, respaldo)
-    log("[2] Mover el sitio viejo al respaldo:")
-    for v in VIEJOS:
+    reanudar = "--reanudar" in sys.argv
+    if reanudar:
+        log("\n[1-2] --reanudar: el respaldo ya se hizo en una corrida anterior; se omite.")
+        log("      Repetirlo movería los archivos NUEVOS al respaldo.")
+    else:
+        log(f"\n[1] Carpeta de respaldo: /{respaldo}/")
+        crear_carpeta(f, respaldo)
+        log("[2] Mover el sitio viejo al respaldo:")
+    for v in ([] if reanudar else VIEJOS):
         origen = ruta(RAIZ, v)
         if existe(f, origen):
             log(f"      {v}")
@@ -263,7 +279,7 @@ def main():
             log(f"      FALLÓ {remota}: {e}")
     if fallas:
         log(f"\n{len(fallas)} subidas fallaron. Me detengo: NO subo el .htaccess ni borro nuevo/.")
-        log(f"El sitio viejo está entero en /{respaldo}/. Correr de nuevo para reintentar.")
+        log("El sitio viejo está entero en la carpeta de respaldo. Para reintentar: --aplicar --reanudar")
         f.quit()
         sys.exit(1)
     log("      todo subido" if APLICAR else "      (ensayo)")
@@ -291,7 +307,13 @@ def main():
     f.quit()
     log("\n" + ("LISTO. Abrir https://dekarter.cl para comprobar." if APLICAR
                else "Ensayo terminado. Si todo se ve bien, correr lo mismo con --aplicar."))
-    log(f"Para volver atrás: los archivos viejos están en /{respaldo}/.")
+    if reanudar:
+        # Con --reanudar el respaldo se hizo en otra corrida: el nombre calculado
+        # ahora tendría otra hora y apuntaría a una carpeta que no existe.
+        log("Para volver atrás: los archivos viejos están en la carpeta "
+            "respaldo-sitio-anterior-* que creó la primera corrida.")
+    else:
+        log(f"Para volver atrás: los archivos viejos están en /{respaldo}/.")
 
 
 if __name__ == "__main__":
