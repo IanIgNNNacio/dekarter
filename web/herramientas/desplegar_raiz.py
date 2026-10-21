@@ -6,7 +6,9 @@ Uso:
     python web\\herramientas\\desplegar_raiz.py            # ensayo: muestra qué haría, no toca nada
     python web\\herramientas\\desplegar_raiz.py --aplicar  # lo hace de verdad
 
-Credenciales, en este orden:
+Credenciales, en este orden (la primera que esté completa):
+  0. El archivo credenciales-ftp.local, al lado de este script, que llena el
+     usuario a mano y git ignora.
   1. Una cuenta FTP dedicada, en variables de entorno:
        DK_FTP_USER, DK_FTP_PASS   (obligatorias)
        DK_FTP_HOST                (por omisión 162.241.62.4)
@@ -42,7 +44,27 @@ import xml.etree.ElementTree as ET
 AQUI = os.path.dirname(os.path.abspath(__file__))
 LOCAL = os.path.normpath(os.path.join(AQUI, "..", "nuevo"))
 
-RAIZ = os.environ.get("DK_FTP_RAIZ", "public_html").strip("/") or "."
+ARCHIVO_CRED = os.path.join(AQUI, "credenciales-ftp.local")
+
+
+def leer_archivo_cred():
+    """Lee credenciales-ftp.local (clave = valor). Lo llena el usuario a mano;
+    git lo ignora. Devuelve {} si no existe o está vacío."""
+    datos = {}
+    if os.path.isfile(ARCHIVO_CRED):
+        with open(ARCHIVO_CRED, encoding="utf-8") as fh:
+            for linea in fh:
+                linea = linea.strip()
+                if not linea or linea.startswith("#") or "=" not in linea:
+                    continue
+                clave, valor = linea.split("=", 1)
+                if valor.strip():
+                    datos[clave.strip().lower()] = valor.strip()
+    return datos
+
+
+_CRED = leer_archivo_cred()
+RAIZ = (os.environ.get("DK_FTP_RAIZ") or _CRED.get("raiz") or "public_html").strip("/") or "."
 
 VIEJOS = ["index.php", "contacto.php", "indexfinal3.html", "styles.css", "error_log", ".htaccess"]
 NO_SUBIR_EXT = (".md",)
@@ -68,9 +90,13 @@ def credenciales():
                 int(os.environ.get("DK_FTP_PORT", "21")),
                 os.environ["DK_FTP_USER"], os.environ["DK_FTP_PASS"])
 
+    if _CRED.get("usuario") and _CRED.get("contrasena"):
+        return (_CRED.get("servidor", "162.241.62.4"), int(_CRED.get("puerto", "21")),
+                _CRED["usuario"], _CRED["contrasena"])
+
     if "--sin-filezilla" in sys.argv:
-        sys.exit("Faltan DK_FTP_USER y DK_FTP_PASS. Con --sin-filezilla no se leen "
-                 "las contraseñas guardadas de FileZilla.")
+        sys.exit("Falta llenar usuario y contrasena en credenciales-ftp.local. Con "
+                 "--sin-filezilla no se leen las contraseñas guardadas de FileZilla.")
 
     archivo = os.path.join(os.environ["APPDATA"], "FileZilla", "sitemanager.xml")
     for s in ET.parse(archivo).iter("Server"):
