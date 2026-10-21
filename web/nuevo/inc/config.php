@@ -171,6 +171,37 @@ $DK['whatsapp'] = 'https://wa.me/' . ltrim($DK['fono_e164'], '+')
     . '?text=' . rawurlencode('Hola, necesito una cotización de maestranza.');
 
 // ---------------------------------------------------------------------------
+// Países del campo teléfono
+// ---------------------------------------------------------------------------
+// Los que tienen sentido para una maestranza minera: Chile primero, los países
+// mineros de la región, y los fabricantes y mercados con los que se cruza
+// (Sandvik es sueco). 'min' y 'max' son los dígitos del número nacional, sin
+// el código de país. 'cero': en esos países la gente antepone un 0 al marcar
+// dentro del país, y hay que quitarlo para armar el número internacional.
+//
+// Las banderas son emojis: en Windows se ven como las dos letras del país
+// («CL»), que igual se entiende. No vale la pena cargar imágenes por esto.
+
+$DK_PAISES = [
+    'CL' => ['nombre' => 'Chile',          'bandera' => '🇨🇱', 'codigo' => '56',  'min' => 9,  'max' => 9,  'ejemplo' => '9 1234 5678',    'cero' => false],
+    'PE' => ['nombre' => 'Perú',           'bandera' => '🇵🇪', 'codigo' => '51',  'min' => 8,  'max' => 9,  'ejemplo' => '912 345 678',    'cero' => false],
+    'AR' => ['nombre' => 'Argentina',      'bandera' => '🇦🇷', 'codigo' => '54',  'min' => 10, 'max' => 11, 'ejemplo' => '9 11 2345 6789', 'cero' => true],
+    'BO' => ['nombre' => 'Bolivia',        'bandera' => '🇧🇴', 'codigo' => '591', 'min' => 8,  'max' => 8,  'ejemplo' => '7123 4567',      'cero' => false],
+    'BR' => ['nombre' => 'Brasil',         'bandera' => '🇧🇷', 'codigo' => '55',  'min' => 10, 'max' => 11, 'ejemplo' => '11 91234 5678',  'cero' => true],
+    'CO' => ['nombre' => 'Colombia',       'bandera' => '🇨🇴', 'codigo' => '57',  'min' => 10, 'max' => 10, 'ejemplo' => '312 345 6789',   'cero' => false],
+    'EC' => ['nombre' => 'Ecuador',        'bandera' => '🇪🇨', 'codigo' => '593', 'min' => 8,  'max' => 9,  'ejemplo' => '99 123 4567',    'cero' => true],
+    'MX' => ['nombre' => 'México',         'bandera' => '🇲🇽', 'codigo' => '52',  'min' => 10, 'max' => 10, 'ejemplo' => '55 1234 5678',   'cero' => false],
+    'US' => ['nombre' => 'Estados Unidos', 'bandera' => '🇺🇸', 'codigo' => '1',   'min' => 10, 'max' => 10, 'ejemplo' => '415 555 0123',   'cero' => false],
+    'CA' => ['nombre' => 'Canadá',         'bandera' => '🇨🇦', 'codigo' => '1',   'min' => 10, 'max' => 10, 'ejemplo' => '416 555 0123',   'cero' => false],
+    'AU' => ['nombre' => 'Australia',      'bandera' => '🇦🇺', 'codigo' => '61',  'min' => 9,  'max' => 9,  'ejemplo' => '412 345 678',    'cero' => true],
+    'ZA' => ['nombre' => 'Sudáfrica',      'bandera' => '🇿🇦', 'codigo' => '27',  'min' => 9,  'max' => 9,  'ejemplo' => '71 234 5678',    'cero' => true],
+    'SE' => ['nombre' => 'Suecia',         'bandera' => '🇸🇪', 'codigo' => '46',  'min' => 7,  'max' => 9,  'ejemplo' => '70 123 4567',    'cero' => true],
+    'ES' => ['nombre' => 'España',         'bandera' => '🇪🇸', 'codigo' => '34',  'min' => 9,  'max' => 9,  'ejemplo' => '612 345 678',    'cero' => false],
+    // 'Otro': se escribe el número internacional completo, con su código.
+    'XX' => ['nombre' => 'Otro país',      'bandera' => '🌐',  'codigo' => '',    'min' => 8,  'max' => 15, 'ejemplo' => '+44 7700 900123', 'cero' => false],
+];
+
+// ---------------------------------------------------------------------------
 // Servicios
 // ---------------------------------------------------------------------------
 // El orden de este arreglo manda: define el menú, la grilla de la portada y el

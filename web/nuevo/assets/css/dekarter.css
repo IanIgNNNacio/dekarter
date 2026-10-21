@@ -200,6 +200,10 @@ a:hover { color: var(--azul-osc); }
 }
 .cabecera-fono:hover { color: var(--azul); }
 .cabecera-fono svg { width: 17px; height: 17px; color: var(--bronce); }
+/* Con el logo DK la cabecera no alcanza a mostrar logo, menú y teléfono juntos
+   por debajo de ~1200 px. El teléfono se esconde: sigue a mano en el botón
+   flotante de WhatsApp y en el pie. */
+@media (max-width: 1200px) { .cabecera-fono { display: none; } }
 
 .menu-boton {
   display: none;
@@ -439,6 +443,12 @@ a:hover { color: var(--azul-osc); }
   box-shadow: 0 0 0 3px var(--azul-claro);
 }
 .campo input[aria-invalid="true"], .campo textarea[aria-invalid="true"] { border-color: var(--error); }
+
+/* Teléfono: selector de país + número, en una sola fila */
+.campo-fono { display: flex; gap: 8px; }
+.campo-fono select { flex: 0 0 auto; width: 9.5rem; padding-right: 8px; }
+.campo-fono input { flex: 1 1 auto; min-width: 0; }
+@media (max-width: 380px) { .campo-fono select { width: 7.5rem; } }
 
 /* Trampa para robots: invisible para personas, sin display:none para que el bot la vea */
 .trampa {

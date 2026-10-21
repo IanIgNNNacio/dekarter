@@ -318,6 +318,14 @@ function dk_nombre_cabecera(string $nombre): string
     $limpio = str_replace(['"', '<', '>', '\\', ':', ';', ','], ' ', $limpio);
     $limpio = trim(preg_replace('~\s+~u', ' ', $limpio) ?? '');
 
+    // Las cabeceras de correo son ASCII. Un «Pérez» con tilde cruda funciona
+    // en casi todos lados, pero es una cabecera mal formada y los filtros de
+    // spam lo cobran. Si hay algo fuera de ASCII, se codifica como manda el
+    // estándar (RFC 2047); la palabra codificada no lleva comillas.
+    if (preg_match('~[^\x20-\x7E]~', $limpio)) {
+        return '=?UTF-8?B?' . base64_encode($limpio) . '?=';
+    }
+
     return '"' . $limpio . '"';
 }
 
@@ -331,27 +339,94 @@ function dk_limpia_cuerpo(string $valor, int $maximo = 4000): string
 }
 
 /**
- * Normaliza un teléfono chileno a +56XXXXXXXXX.
- * Devuelve null si no parece un número chileno válido.
+ * Normaliza un teléfono al formato internacional E.164 (+56912345678).
+ *
+ * $pais es la clave de $DK_PAISES que eligió el visitante en el selector.
+ * Devuelve null si el número no calza con el largo de ese país; el error que
+ * ve la persona lo arma quien llama, con el ejemplo del país.
+ *
+ * Tolera lo que la gente escribe de verdad: espacios, guiones, paréntesis, el
+ * código de país repetido («56 9 1234 5678» con Chile elegido) y el 0 de
+ * marcado nacional en los países que lo usan («011 2345 6789» en Argentina).
  */
-function dk_normaliza_fono(string $entrada): ?string
+function dk_normaliza_fono(string $pais, string $entrada): ?string
 {
+    global $DK_PAISES;
+
+    $p = $DK_PAISES[$pais] ?? null;
+    if ($p === null) {
+        return null;
+    }
+
     $digitos = preg_replace('~\D~', '', $entrada) ?? '';
-
-    // 56 9 1234 5678  →  ya viene con el código de país
-    if (strlen($digitos) === 11 && str_starts_with($digitos, '56')) {
-        return '+' . $digitos;
-    }
-    // 9 1234 5678  →  móvil sin código de país
-    if (strlen($digitos) === 9 && $digitos[0] === '9') {
-        return '+56' . $digitos;
-    }
-    // 2 2345 6789  →  fijo con código de área, sin código de país
-    if (strlen($digitos) === 9) {
-        return '+56' . $digitos;
+    if ($digitos === '') {
+        return null;
     }
 
-    // 8 dígitos es ambiguo: falta el código de área o el 9 del móvil. No se
-    // adivina — se le pide al visitante que lo complete.
-    return null;
+    // «Otro país»: viene el número internacional completo, con su código.
+    if ($p['codigo'] === '') {
+        $digitos = ltrim($digitos, '0');          // 00 44 ... → 44 ...
+        $largo = strlen($digitos);
+        return ($largo >= $p['min'] && $largo <= $p['max']) ? '+' . $digitos : null;
+    }
+
+    $codigo = $p['codigo'];
+    $cabe = static fn(string $d): bool => strlen($d) >= $p['min'] && strlen($d) <= $p['max'];
+
+    // Código de país repetido al inicio, con o sin el 00 internacional.
+    foreach (['00' . $codigo, $codigo] as $prefijo) {
+        if (str_starts_with($digitos, $prefijo) && $cabe(substr($digitos, strlen($prefijo)))) {
+            return '+' . $codigo . substr($digitos, strlen($prefijo));
+        }
+    }
+
+    // El 0 de marcado nacional.
+    if ($p['cero'] && str_starts_with($digitos, '0') && $cabe(substr($digitos, 1))) {
+        return '+' . $codigo . substr($digitos, 1);
+    }
+
+    return $cabe($digitos) ? '+' . $codigo . $digitos : null;
+}
+
+/**
+ * Formatea un número E.164 para leerlo de un vistazo: +56 9 1234 5678.
+ *
+ * Usa el agrupamiento del ejemplo del país ('ejemplo' en $DK_PAISES): si el
+ * número tiene tantos dígitos como el ejemplo, se separa igual que él. Si no
+ * calza —o el país es «Otro»—, se agrupa de a tres sin dejar un dígito suelto
+ * al final. Sólo sirve para mostrar: lo que se guarda y se marca es el E.164.
+ */
+function dk_formato_fono(string $e164, string $pais = ''): string
+{
+    global $DK_PAISES;
+
+    $d = ltrim($e164, '+');
+    $p = $DK_PAISES[$pais] ?? null;
+
+    if ($p === null || $p['codigo'] === '' || !str_starts_with($d, $p['codigo'])) {
+        return '+' . $d;
+    }
+
+    $nacional = substr($d, strlen($p['codigo']));
+    $grupos = array_map('strlen', preg_split('~\s+~', trim($p['ejemplo'])));
+
+    if (array_sum($grupos) !== strlen($nacional)) {
+        // De a tres, pero si sobra uno, el último grupo lleva cuatro.
+        $grupos = array_fill(0, intdiv(strlen($nacional), 3), 3);
+        $resto = strlen($nacional) % 3;
+        if ($resto === 1 && $grupos) {
+            $grupos[count($grupos) - 1] = 4;
+        } elseif ($resto) {
+            $grupos[] = $resto;
+        }
+    }
+
+    $partes = [];
+    $pos = 0;
+    foreach ($grupos as $g) {
+        $partes[] = substr($nacional, $pos, $g);
+        $pos += $g;
+    }
+
+    return '+' . $p['codigo'] . ' ' . implode(' ', array_filter($partes, 'strlen'));
 }

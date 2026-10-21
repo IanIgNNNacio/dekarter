@@ -74,11 +74,32 @@ $marca = static function (string $campo) use ($err): string {
         <?php endif; ?>
       </div>
 
+      <?php
+      $pais_actual = $val['telefono_pais'] ?? 'CL';
+      if (!isset($DK_PAISES[$pais_actual])) {
+          $pais_actual = 'CL';
+      }
+      $p_actual = $DK_PAISES[$pais_actual];
+      ?>
       <div class="campo">
         <label for="telefono">Teléfono <span class="obligatorio" aria-hidden="true">*</span></label>
-        <input type="tel" name="telefono" id="telefono" required autocomplete="tel"
-               inputmode="tel" placeholder="9 1234 5678"
-               value="<?= $antes('telefono') ?>"<?= $marca('telefono') ?>>
+        <div class="campo-fono">
+          <select name="telefono_pais" id="telefono_pais" aria-label="País del teléfono"
+                  autocomplete="tel-country-code">
+            <?php foreach ($DK_PAISES as $iso => $pp): ?>
+              <option value="<?= e($iso) ?>"
+                      data-ejemplo="<?= e($pp['ejemplo']) ?>"
+                      data-max="<?= (int) $pp['max'] + ($pp['codigo'] === '' ? 6 : 4) ?>"
+                      <?= $iso === $pais_actual ? ' selected' : '' ?>>
+                <?= e($pp['bandera'] . ' ' . ($pp['codigo'] !== '' ? '+' . $pp['codigo'] : $pp['nombre'])) ?>
+                <?= $pp['codigo'] !== '' ? e(' ' . $pp['nombre']) : '' ?>
+              </option>
+            <?php endforeach; ?>
+          </select>
+          <input type="tel" name="telefono" id="telefono" required autocomplete="tel-national"
+                 inputmode="tel" placeholder="<?= e($p_actual['ejemplo']) ?>"
+                 value="<?= $antes('telefono') ?>"<?= $marca('telefono') ?>>
+        </div>
         <?php if (isset($err['telefono'])): ?>
           <span class="ayuda" id="error-telefono" style="color:var(--error)"><?= e($err['telefono']) ?></span>
         <?php else: ?>

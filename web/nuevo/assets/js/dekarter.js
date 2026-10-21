@@ -1,5 +1,6 @@
 /* Maestranza Dekarter — el único JavaScript del sitio.
-   Dos cosas: el menú en móvil y evitar el doble envío del formulario. Nada más.
+   Tres cosas: el menú en móvil, el ejemplo del teléfono según el país y
+   evitar el doble envío del formulario. Nada más.
    La página funciona completa sin este archivo. */
 
 (function () {
@@ -25,6 +26,26 @@
         boton.focus();
       }
     });
+  }
+
+  /* --- Teléfono: el ejemplo cambia con el país --------------------------
+     Sólo ayuda visual. Lo que vale es la validación del servidor, que conoce
+     el largo correcto de cada país. */
+
+  var pais = document.getElementById('telefono_pais');
+  var fono = document.getElementById('telefono');
+
+  if (pais && fono) {
+    var alCambiarPais = function () {
+      var opcion = pais.options[pais.selectedIndex];
+      fono.placeholder = opcion.getAttribute('data-ejemplo') || '';
+      fono.maxLength = parseInt(opcion.getAttribute('data-max'), 10) || 20;
+    };
+    pais.addEventListener('change', function () {
+      alCambiarPais();
+      fono.focus();
+    });
+    alCambiarPais();
   }
 
   /* --- Formulario: un solo envío ---------------------------------------- */

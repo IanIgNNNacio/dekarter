@@ -16,7 +16,8 @@ declare(strict_types=1);
 require_once __DIR__ . '/antispam.php';
 
 $fc = [
-    'valores' => ['nombre' => '', 'empresa' => '', 'email' => '', 'telefono' => '', 'equipo' => '', 'mensaje' => ''],
+    'valores' => ['nombre' => '', 'empresa' => '', 'email' => '', 'telefono' => '', 'telefono_pais' => 'CL',
+                  'equipo' => '', 'mensaje' => ''],
     'errores' => [],
 ];
 
@@ -31,6 +32,7 @@ $v = [
     'empresa'  => dk_limpia_cabecera((string) ($_POST['empresa'] ?? ''), 90),
     'email'    => dk_limpia_cabecera((string) ($_POST['email'] ?? ''), 120),
     'telefono' => dk_limpia_cabecera((string) ($_POST['telefono'] ?? ''), 30),
+    'telefono_pais' => strtoupper(substr(dk_limpia_cabecera((string) ($_POST['telefono_pais'] ?? 'CL'), 2), 0, 2)),
     'equipo'   => dk_limpia_cabecera((string) ($_POST['equipo'] ?? ''), 40),
     'mensaje'  => dk_limpia_cuerpo((string) ($_POST['mensaje'] ?? '')),
 ];
@@ -111,9 +113,23 @@ if (!filter_var($v['email'], FILTER_VALIDATE_EMAIL)) {
     $fc['errores']['email'] = 'Revisa el correo: parece que le falta algo.';
 }
 
-$fono = dk_normaliza_fono($v['telefono']);
+if (!isset($DK_PAISES[$v['telefono_pais']])) {
+    $v['telefono_pais'] = 'CL';
+    $fc['valores']['telefono_pais'] = 'CL';
+}
+$pais_fono = $DK_PAISES[$v['telefono_pais']];
+$fono = dk_normaliza_fono($v['telefono_pais'], $v['telefono']);
 if ($fono === null) {
-    $fc['errores']['telefono'] = 'Escribe el teléfono con los 9 dígitos, por ejemplo 9 1234 5678.';
+    if ($pais_fono['codigo'] === '') {
+        $fc['errores']['telefono'] = 'Escribe el número completo con el código de país, por ejemplo '
+            . $pais_fono['ejemplo'] . '.';
+    } else {
+        $largo = $pais_fono['min'] === $pais_fono['max']
+            ? $pais_fono['min'] . ' dígitos'
+            : 'entre ' . $pais_fono['min'] . ' y ' . $pais_fono['max'] . ' dígitos';
+        $fc['errores']['telefono'] = 'Para ' . $pais_fono['nombre'] . ' el número lleva ' . $largo
+            . ', por ejemplo ' . $pais_fono['ejemplo'] . '. Si es de otro país, cámbialo en el selector.';
+    }
 }
 
 if (mb_strlen($v['mensaje']) < 15) {
@@ -129,58 +145,37 @@ if ($fc['errores'] !== []) {
     return;
 }
 
-// --- Armado del correo ----------------------------------------------------
+// --- Armado y envío del correo ---------------------------------------------
 
-$asunto = 'Cotización desde la web';
-if ($v['equipo'] !== '' && $v['equipo'] !== 'No aplica') {
-    $asunto .= ' — ' . $v['equipo'];
-}
+require_once __DIR__ . '/correo-cotizacion.php';
 
-$cuerpo = "Nuevo mensaje desde el formulario de dekarter.cl\n"
-    . str_repeat('-', 52) . "\n\n"
-    . 'Nombre:   ' . $v['nombre'] . "\n"
-    . 'Empresa:  ' . ($v['empresa'] !== '' ? $v['empresa'] : '(no indicó)') . "\n"
-    . 'Correo:   ' . $v['email'] . "\n"
-    . 'Teléfono: ' . $fono . "\n"
-    . 'Equipo:   ' . ($v['equipo'] !== '' ? $v['equipo'] : '(no indicó)') . "\n\n"
-    . "Mensaje:\n" . $v['mensaje'] . "\n\n"
-    . str_repeat('-', 52) . "\n"
-    . 'Recibido: ' . date('d-m-Y H:i') . " (hora de Chile)\n";
+$correo = dk_correo_cotizacion([
+    'nombre'  => $v['nombre'],
+    'empresa' => $v['empresa'],
+    'email'   => $v['email'],
+    'fono'    => $fono,
+    'pais'    => $v['telefono_pais'],
+    'equipo'  => $v['equipo'],
+    'mensaje' => $v['mensaje'],
+]);
+$cuerpo = $correo['texto'];   // también es el respaldo en disco si el envío falla
 
 // Remitente y destinatarios. El detalle de por qué es cada uno está en
 // config.php, junto a los valores.
-$de = $DK['email_de'];
-
 $destinos = $DK['email'];
 if ($DK['email_copia'] !== '') {
     $destinos .= ', ' . $DK['email_copia'];
 }
 
-$cabeceras = [
-    'From: ' . $DK['email_de_nombre'] . ' <' . $de . '>',
-    'Reply-To: ' . dk_nombre_cabecera($v['nombre']) . ' <' . $v['email'] . '>',
-    'Content-Type: text/plain; charset=UTF-8',
-    'Content-Transfer-Encoding: 8bit',
-    'X-Mailer: dekarter.cl',
-];
-
-$asunto_mime = '=?UTF-8?B?' . base64_encode($asunto) . '?=';
-$cabeceras_txt = implode("\r\n", $cabeceras);
-
-/*
- * El 5.º parámetro fija el remitente del sobre (Return-Path). Ayuda con los
- * filtros, pero hay hosting que lo prohíbe y hace fallar la llamada completa.
- * Se intenta con él y, si falla, se reintenta sin él: vale más un correo
- * entregado que un Return-Path prolijo.
- */
-$enviado = @mail($destinos, $asunto_mime, $cuerpo, $cabeceras_txt, '-f' . $de);
-
-if (!$enviado) {
-    $enviado = @mail($destinos, $asunto_mime, $cuerpo, $cabeceras_txt);
-    if ($enviado) {
-        dk_bitacora('enviado:sin_envelope', $v['email']);
-    }
-}
+$enviado = dk_enviar_multipart(
+    $destinos,
+    $DK['email_de'],
+    $DK['email_de_nombre'],
+    dk_nombre_cabecera($v['nombre']) . ' <' . $v['email'] . '>',
+    dk_limpia_cabecera($correo['asunto'], 160),
+    $correo['texto'],
+    $correo['html']
+);
 
 if (!$enviado) {
     // Nunca se pierde un contacto: si el correo falla, queda en disco.
