@@ -446,9 +446,9 @@ a:hover { color: var(--azul-osc); }
 
 /* Teléfono: selector de país + número, en una sola fila */
 .campo-fono { display: flex; gap: 8px; }
-.campo-fono select { flex: 0 0 auto; width: 9.5rem; padding-right: 8px; }
+.campo-fono select { flex: 0 0 auto; width: 11.5rem; padding-right: 8px; }
 .campo-fono input { flex: 1 1 auto; min-width: 0; }
-@media (max-width: 380px) { .campo-fono select { width: 7.5rem; } }
+@media (max-width: 420px) { .campo-fono select { width: 9rem; } }
 
 /* Trampa para robots: invisible para personas, sin display:none para que el bot la vea */
 .trampa {

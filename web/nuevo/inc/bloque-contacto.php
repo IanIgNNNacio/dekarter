@@ -91,8 +91,7 @@ $marca = static function (string $campo) use ($err): string {
                       data-ejemplo="<?= e($pp['ejemplo']) ?>"
                       data-max="<?= (int) $pp['max'] + ($pp['codigo'] === '' ? 6 : 4) ?>"
                       <?= $iso === $pais_actual ? ' selected' : '' ?>>
-                <?= e($pp['bandera'] . ' ' . ($pp['codigo'] !== '' ? '+' . $pp['codigo'] : $pp['nombre'])) ?>
-                <?= $pp['codigo'] !== '' ? e(' ' . $pp['nombre']) : '' ?>
+                <?= e($pp['bandera'] . ' ' . $pp['nombre'] . ($pp['codigo'] !== '' ? ' (+' . $pp['codigo'] . ')' : '')) ?>
               </option>
             <?php endforeach; ?>
           </select>
