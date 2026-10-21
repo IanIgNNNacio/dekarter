@@ -1,47 +1,90 @@
 # =============================================================================
-#  Maestranza Dekarter — configuración de Apache
+#  .htaccess DEFINITIVO para la raíz de public_html
 #
-#  Mientras el sitio viva en la subcarpeta /nuevo/, este archivo va en esa
-#  subcarpeta y RewriteBase apunta ahí. Al pasar a la raíz del dominio hay que
-#  cambiar UNA línea: RewriteBase /nuevo/  ->  RewriteBase /
-#  (y poner DK_BASE en '/' y DK_BORRADOR en false dentro de inc/config.php).
+#  Este archivo REEMPLAZA a los dos que hay hoy:
+#    · el .htaccess de la raíz   (hoy sólo canoniza y cachea el sitio viejo)
+#    · el de public_html/nuevo/  (URLs limpias del sitio nuevo)
+#
+#  Se sube cuando el sitio nuevo pasa a la raíz. Hace las dos cosas a la vez.
+#
+#  CÓMO INSTALARLO
+#    1. Renombrar este archivo a .htaccess
+#    2. Subirlo a public_html/, reemplazando el que está
+#    3. Abrir https://dekarter.cl de inmediato
+#
+#  SI SALE ERROR 500: borrar el archivo del servidor. El sitio vuelve al
+#  instante. Un .htaccess no deja nada modificado de forma permanente.
 # =============================================================================
 
 Options -Indexes -MultiViews
 DirectoryIndex index.php
 
-# -----------------------------------------------------------------------------
-#  URLs sin extensión
-# -----------------------------------------------------------------------------
 <IfModule mod_rewrite.c>
     RewriteEngine On
-    RewriteBase /nuevo/
+    RewriteBase /
 
-    # /contacto  ->  contacto.php  (sólo si el .php existe)
-    RewriteCond %{REQUEST_FILENAME}\.php -f
-    RewriteRule ^([^/.]+)/?$ $1.php [L]
-
-    # Quien llegue a /contacto.php se va a /contacto con un 301, para no tener
-    # dos direcciones distintas mostrando la misma página.
+    # -------------------------------------------------------------------------
+    #  1. Una sola dirección buena: https://dekarter.cl
     #
-    # %1 ya trae la ruta completa desde la raíz del dominio —incluida la
-    # subcarpeta— porque THE_REQUEST es la petición cruda: "GET /nuevo/contacto.php".
-    # Por eso el destino es /%1 y no /nuevo/%1: con lo segundo quedaba
-    # /nuevo/nuevo/contacto. Como efecto útil, esta regla no hay que tocarla al
-    # mover el sitio a la raíz.
+    #  Va primero a propósito. Todo lo que sigue tiene que ocurrir ya sobre la
+    #  dirección definitiva, no sobre una de las otras tres.
+    # -------------------------------------------------------------------------
+    RewriteCond %{HTTPS} !=on
+    RewriteRule ^ https://dekarter.cl%{REQUEST_URI} [R=301,L]
+
+    RewriteCond %{HTTP_HOST} ^www\.(.+)$ [NC]
+    RewriteRule ^ https://%1%{REQUEST_URI} [R=301,L]
+
+    # -------------------------------------------------------------------------
+    #  2. Restos del sitio anterior
+    #
+    #  Si alguien tiene guardadas estas direcciones, o Google todavía las
+    #  conserva indexadas, que lleguen a algún lado en vez de dar 404.
+    # -------------------------------------------------------------------------
+    RewriteRule ^indexfinal3\.html$ / [R=301,L]
+
+    # /index.php -> / . Sin esta regla, la regla 4 lo mandaría a /index, que es
+    # una dirección fea y además duplicada de la portada.
+    RewriteCond %{THE_REQUEST} \s/+index\.php[\s?] [NC]
+    RewriteRule ^ / [R=301,L]
+
+    # -------------------------------------------------------------------------
+    #  3. El mapa del sitio
+    #
+    #  Google espera /sitemap.xml. El archivo real es sitemap.php, que lo genera
+    #  desde inc/config.php para que no pueda quedar desactualizado. Se sirve sin
+    #  redirigir: para el visitante la dirección sigue siendo /sitemap.xml.
+    # -------------------------------------------------------------------------
+    RewriteRule ^sitemap\.xml$ sitemap.php [L]
+
+    # -------------------------------------------------------------------------
+    #  4. Direcciones con .php -> versión limpia, con un 301
+    #
+    #  %1 trae la ruta completa desde la raíz, porque THE_REQUEST es la petición
+    #  cruda. Por eso el destino es /%1 y no %1.
+    # -------------------------------------------------------------------------
     RewriteCond %{THE_REQUEST} \s/+(.+?)\.php[\s?] [NC]
     RewriteRule ^ /%1 [R=301,L]
 
-    # Nada de acceso directo a los includes ni a la carpeta de trabajo.
+    # -------------------------------------------------------------------------
+    #  5. URLs limpias: /contacto sirve contacto.php
+    #     Sólo si el .php existe de verdad; si no, sigue de largo hasta el 404.
+    # -------------------------------------------------------------------------
+    RewriteCond %{REQUEST_FILENAME}\.php -f
+    RewriteRule ^([^/.]+)/?$ $1.php [L]
+
+    # -------------------------------------------------------------------------
+    #  6. Nada de acceso directo a los includes ni a la carpeta de trabajo
+    # -------------------------------------------------------------------------
     RewriteRule ^(inc|var)/ - [F,L]
 </IfModule>
 
-ErrorDocument 404 /nuevo/404.php
+ErrorDocument 404 /404.php
 
 # -----------------------------------------------------------------------------
-#  Nadie lee los archivos internos
+#  Archivos que no se sirven nunca
 # -----------------------------------------------------------------------------
-<FilesMatch "\.(md|log|psd|bak|sql|ini|sh)$">
+<FilesMatch "\.(md|log|psd|ai|bak|sql|ini|sh)$">
     Require all denied
 </FilesMatch>
 
@@ -62,14 +105,10 @@ ErrorDocument 404 /nuevo/404.php
 # -----------------------------------------------------------------------------
 #  Caché del navegador
 #
-#  Las imágenes del sitio no cambian nunca: si cambian, cambia el nombre del
-#  archivo. El CSS y el JS llevan pegada la fecha de modificación del archivo en
-#  la dirección (la función activo() de inc/config.php), así que también se
-#  pueden cachear a un año: cuando se editan, cambia la dirección y el navegador
-#  los vuelve a pedir solo.
-#
-#  El sitio actual no manda NINGUNA cabecera de caché: cada visita vuelve a
-#  descargar todo.
+#  El CSS y el JS llevan pegada su fecha de modificación en la dirección (la
+#  función activo() de inc/config.php), así que se pueden cachear a un año sin
+#  riesgo: al editarlos cambia la dirección y el navegador los vuelve a pedir.
+#  Las imágenes no cambian nunca; si cambian, cambia el nombre del archivo.
 # -----------------------------------------------------------------------------
 <IfModule mod_expires.c>
     ExpiresActive On
@@ -83,7 +122,6 @@ ErrorDocument 404 /nuevo/404.php
     ExpiresByType application/javascript    "access plus 1 year"
     ExpiresByType font/woff2                "access plus 1 year"
 
-    # El HTML se genera en PHP y puede cambiar: no se cachea.
     ExpiresByType text/html                 "access plus 0 seconds"
 </IfModule>
 
@@ -97,13 +135,9 @@ ErrorDocument 404 /nuevo/404.php
     </FilesMatch>
 
     # ---- Seguridad ----
-    # No adivines el tipo de archivo: respeta el Content-Type que mando.
     Header always set X-Content-Type-Options "nosniff"
-    # Que nadie meta el sitio dentro de un iframe ajeno.
     Header always set X-Frame-Options "SAMEORIGIN"
-    # Al salir del sitio, no filtres la ruta completa desde donde venía.
     Header always set Referrer-Policy "strict-origin-when-cross-origin"
-    # Apagar lo que el sitio no usa.
     Header always set Permissions-Policy "geolocation=(), microphone=(), camera=(), payment=()"
 
     Header unset X-Powered-By
@@ -116,16 +150,5 @@ ErrorDocument 404 /nuevo/404.php
 <IfModule mod_mime.c>
     AddType image/webp                  .webp
     AddType image/svg+xml               .svg
-    AddType application/ld+json         .jsonld
     AddCharset UTF-8                    .php .html .css .js .xml
-</IfModule>
-
-# -----------------------------------------------------------------------------
-#  PHP
-# -----------------------------------------------------------------------------
-<IfModule mod_php.c>
-    # Los errores se registran, nunca se muestran al visitante: un aviso de PHP
-    # en pantalla le regala al atacante la ruta absoluta del servidor.
-    php_flag display_errors off
-    php_flag log_errors on
 </IfModule>

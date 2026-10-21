@@ -19,15 +19,36 @@ date_default_timezone_set('America/Santiago');
 // ---------------------------------------------------------------------------
 
 /*
- * Mientras el rediseño viva en una subcarpeta del hosting, estas dos constantes
- * lo mantienen aislado del sitio en producción.
+ * Dónde está instalado el sitio. Se deduce solo.
  *
- * Al pasar a la raíz del dominio:
- *   DK_BASE   → '/'
- *   DK_BORRADOR → false
+ * Antes había que editar estas dos constantes a mano al mover el sitio de la
+ * subcarpeta a la raíz. Era el paso con más riesgo de todo el traslado: si se
+ * olvidaba DK_BASE, todos los enlaces y las imágenes apuntaban a /nuevo/ desde
+ * la raíz y el sitio quedaba roto; si se olvidaba DK_BORRADOR, salía a
+ * producción con `noindex` y Google no lo indexaba nunca, sin aviso ninguno.
+ *
+ * Ahora la base sale de la ruta del propio archivo que se está ejecutando, y la
+ * condición de borrador es simplemente «no estoy en la raíz». Los mismos
+ * archivos funcionan en /nuevo/ y en /, sin tocar una línea.
  */
-define('DK_BASE', '/nuevo/');
-define('DK_BORRADOR', true);   // true ⇒ noindex: Google no indexa el borrador
+$dk_dir = str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'] ?? '/index.php'));
+$dk_base = rtrim($dk_dir, '/') . '/';
+
+// Red de seguridad: SCRIPT_NAME lo arma el servidor con la ruta del archivo ya
+// resuelto, no el visitante. Aun así, si saliera algo que no parece una ruta
+// normal, se cae a la raíz en vez de propagar basura a cada enlace del sitio.
+// Cada tramo tiene que empezar por letra, número, guion o guion bajo. Así se
+// descartan `.` y `..`, que si no pasaban el filtro —el punto está en la clase
+// de caracteres— y dejaban una base como `/../../etc/` pegada a cada enlace.
+if (!preg_match('~^(/[A-Za-z0-9_-][A-Za-z0-9._-]*)*/$~', $dk_base)) {
+    $dk_base = '/';
+}
+
+define('DK_BASE', $dk_base);
+
+// En una subcarpeta siempre es un borrador: sale con noindex y sin sitemap.
+// En la raíz, es el sitio de verdad.
+define('DK_BORRADOR', DK_BASE !== '/');
 
 /*
  * Los errores se registran, nunca se muestran.

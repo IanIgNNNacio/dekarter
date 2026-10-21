@@ -138,15 +138,19 @@ Renombrar `web/htaccess-raiz-produccion.txt` a `.htaccess` y subirlo a
 `public_html/`. Fuerza HTTPS, unifica las cuatro direcciones en una, agrega
 caché y bloquea la descarga de los `.psd`. Para revertir: borrar el archivo.
 
-### 3. Pasar el rediseño a la raíz (cuando el cliente apruebe)
+### 3. Pasar el rediseño a la raíz
 
-1. En `inc/config.php`: `DK_BASE` a `'/'` y `DK_BORRADOR` a `false`.
-2. En `nuevo/.htaccess`: `RewriteBase /nuevo/` a `RewriteBase /`, y en la regla
-   de redirección `/nuevo/%1` a `/%1`. También `ErrorDocument`.
-3. Mover el contenido de `nuevo/` a `public_html/`, reemplazando `index.php`.
-4. Borrar `contacto.php` y `indexfinal3.html`: son el handler viejo apuntando a
-   un buzón muerto y una copia de trabajo.
-5. Copiar `robots.txt` a la raíz y apuntar `/sitemap.xml` a `sitemap.php`.
-6. Registrar el sitio en Google Search Console y enviar el sitemap.
+Ya no hay que editar nada antes de subir. `DK_BASE` se deduce de la ruta del
+archivo que se ejecuta, y `DK_BORRADOR` es simplemente «no estoy en la raíz»:
+los mismos archivos funcionan en `/nuevo/` y en `/`.
+
+El `.htaccess` de `web/nuevo/` **ya es la versión de raíz**: hace la
+canonicalización (HTTPS y sin `www`) y las URLs limpias en un solo archivo, y
+reemplaza a los dos que había separados.
+
+Pasos detallados en [`web/PASAR-A-RAIZ.md`](web/PASAR-A-RAIZ.md). En resumen:
+mover los cinco archivos viejos fuera de `public_html`, subir el contenido de
+`web/nuevo/` a la raíz, dejar `var/` en 755, borrar `public_html/nuevo/` y
+declarar el sitemap en Search Console.
 
 La copia en `web/actual/` sigue siendo el punto de retorno.

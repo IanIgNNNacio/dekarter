@@ -2,17 +2,17 @@
   "version": "0.0.1",
   "configurations": [
     {
-      "name": "dekarter-web",
+      "name": "dekarter-raiz",
       "runtimeExecutable": "php",
       "runtimeArgs": [
         "-S",
-        "localhost:8123",
+        "localhost:8124",
         "-t",
-        "F:/saile/clientes/dekarter/web",
-        "C:/Users/Ian/AppData/Local/Temp/claude/F--saile-clientes-dekarter/6b11056c-0903-4bf6-a553-414b0ad66bc7/scratchpad/router.php"
+        "F:/saile/clientes/dekarter/web/nuevo",
+        "C:/Users/Ian/AppData/Local/Temp/claude/F--saile-clientes-dekarter/6b11056c-0903-4bf6-a553-414b0ad66bc7/scratchpad/router-raiz.php"
       ],
-      "port": 8123,
-      "url": "http://localhost:8123"
+      "port": 8124,
+      "url": "http://localhost:8124"
     }
   ]
 }
