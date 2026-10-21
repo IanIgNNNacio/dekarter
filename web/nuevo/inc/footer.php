@@ -6,12 +6,8 @@
 
       <div>
         <div class="pie-marca">
-          <img src="<?= e(img('marca-dekarter-negativo.svg')) ?>" width="34" height="37"
-               alt="" aria-hidden="true">
-          <span class="marca-texto">
-            <span class="marca-nombre">DEKARTER</span>
-            <span class="marca-bajada">Maestranza</span>
-          </span>
+          <img src="<?= e(img('logo-dekarter-horizontal-negativo.svg')) ?>" width="202" height="48"
+               alt="<?= e($DK['razon_social']) ?>">
         </div>
         <p><?= e($DK['descripcion']) ?></p>
       </div>

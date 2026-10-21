@@ -1,59 +1,57 @@
-# Archivos de marca — Ruta A · Buje y pasador
+# Archivos de marca — logo DK
 
-El símbolo es el corte de un buje con su pasador montado y, a la vez, la letra D.
-Geometría pura: dos formas y un círculo, sin degradados ni efectos. Espesor de
-anillo constante (18 unidades sobre un radio exterior de 48).
+Logo pedido por Dekarter en octubre de 2026. La imagen original que mandaron
+está en `web/marca/fuente-cliente/dk-original-cliente.webp`, y la marca anterior
+(buje y pasador) quedó guardada en `web/marca/anterior-buje-y-pasador/`.
 
-## Colores exactos
+## Cómo se vectorizó
 
-| Rol | HEX | RGB | CMYK aprox. | Uso |
-|---|---|---|---|---|
-| Azul Dekarter | `#163A7D` | 22 · 58 · 125 | 96 · 78 · 15 · 3 | Anillo, titulares, color dominante |
-| Bronce buje | `#A9762F` | 169 · 118 · 47 | 30 · 55 · 100 · 15 | Pasador. Acento único, nunca para texto largo |
-| Bronce claro | `#D8A55F` | 216 · 165 · 95 | 15 · 35 · 70 · 2 | Sólo el pasador sobre fondo oscuro |
-| Tinta grafito | `#0F1519` | 15 · 21 · 25 | 80 · 65 · 60 · 75 | Versión de un color, texto corrido |
+La imagen original es un render: textura de concreto de fondo, relleno metálico
+y contorno oscuro. No se calcó píxel a píxel —eso da curvas temblorosas—, sino
+que se reconstruyó con tipografías de licencia libre (OFL) que calzan con el
+original, convertidas a curvas:
 
-Los CMYK son una conversión de referencia. Antes de mandar a imprenta, pedir la
-prueba de color: el azul en offset tiende a oscurecerse.
+- **DK:** Alfa Slab One
+- **MAESTRANZA DEKARTER SPA:** Barlow Bold
+
+Todo el texto está en curvas: los archivos se ven igual en cualquier computador,
+imprenta o plotter, aunque no tengan las fuentes instaladas. Se pueden mandar a
+imprenta tal cual.
+
+Se quitó la textura de concreto: era el fondo de la imagen, no parte del logo.
+
+El contorno se dibuja como dos capas (trazo detrás, relleno encima), no con
+`paint-order`, para que Illustrator, Inkscape y las imprentas lo muestren igual.
+
+## Colores
+
+| Rol | HEX |
+|---|---|
+| Azul del nombre | `#0D3857` (medido en la imagen original) |
+| Acero claro / medio / oscuro (degradado) | `#CDD2D7` · `#A4AAB0` · `#7E858C` |
+| Acero plano (impresión) | `#A3A9AF` |
+| Contorno | `#2B3035` |
+| DK en negativo | `#D9DDE1` |
 
 ## Qué archivo usar
 
 | Archivo | Cuándo |
 |---|---|
-| `marca-dekarter.svg` | Uso general a color sobre fondo claro. |
-| `marca-dekarter-negativo.svg` | Fondo oscuro: pie de la web, cartel retroiluminado. |
-| `marca-dekarter-1color.svg` | Grabado, sello de goma, bordado, corte de vinilo, guía de despacho en blanco y negro. Hereda el color del contexto (`currentColor`), así que sirve en cualquier tinta única. |
-| `favicon.svg` | Pestaña del navegador. Anillo engrosado a propósito para que aguante 16 px. |
-| `avatar-dekarter.svg` | WhatsApp Business, Perfil de Empresa en Google, redes. Fondo azul lleno; se recorta bien en círculo. |
+| `logo-dekarter.svg` | Versión principal, apilada, con degradado metálico. Pantalla. |
+| `logo-dekarter-plano.svg` | Igual, sin degradado. **Imprenta, vinilo de corte, bordado.** |
+| `logo-dekarter-negativo.svg` | Fondo oscuro. |
+| `logo-dekarter-1color.svg` | Un solo color (`currentColor`). Sello, grabado, fax. Usado como imagen suelta sale negro. |
+| `logo-dekarter-horizontal.svg` | Apaisado. Barra superior de la web, membrete, firma de correo. |
+| `logo-dekarter-horizontal-negativo.svg` | Apaisado sobre fondo oscuro. Pie de la web. |
+| `isotipo-dk.svg` | El DK solo. |
+| `favicon.svg` | Pestaña del navegador. DK claro sobre azul, sin contorno fino: a 16 px se empastaría. |
+| `avatar-dekarter.svg` | 512 × 512 para WhatsApp Business, Perfil de Empresa en Google y redes. |
 
 ## Reglas de uso
 
-- **Área de respeto:** un espacio libre igual al radio del pasador alrededor de todo el símbolo.
-- **Tamaño mínimo:** 20 px de alto en pantalla, 8 mm en impresión. Bajo eso, usar `favicon.svg`.
-- **Nunca:** agregarle sombra, bisel, degradado o contorno; deformarlo; rotarlo; cambiarle los colores; ponerlo sobre una foto con detalle donde el anillo se pierda.
-- **Sobre foto:** usar la versión en negativo y sólo sobre una zona oscura y pareja.
-
-## Pendiente: el logotipo (la palabra)
-
-El texto «DEKARTER / MAESTRANZA» se compone en **Archivo 800** (Google Fonts).
-En la web va como texto HTML real —queda nítido, seleccionable y accesible—, así
-que el sitio no necesita nada más.
-
-Para imprenta, vinilo y bordado hace falta un archivo con **el texto convertido a
-curvas**, para que no dependa de que la tipografía esté instalada. Dos caminos:
-
-1. Descargar la familia Archivo desde `fonts.google.com/specimen/Archivo`, abrir
-   el SVG en Inkscape (gratis) o Illustrator y aplicar *Trazado → Objeto a trazado*.
-2. Pasarme el archivo `Archivo-ExtraBold.ttf` y lo genero yo.
-
-Mientras eso no exista, no mandar el logo a ninguna imprenta.
-
-## Generar PNG e ICO a partir de estos SVG
-
-Todo sale de los SVG, así que nunca hay que volver a dibujar nada:
-
-```bash
-magick -background none marca-dekarter.svg -resize 800x logo-dekarter@2x.png
-magick -background none favicon.svg -resize 512x512 avatar-512.png
-magick favicon.svg -define icon:auto-resize=48,32,16 favicon.ico
-```
+- **Tamaño mínimo** del logo apilado: 30 mm de ancho impreso, 120 px en pantalla.
+  Más chico, el contorno del DK se pierde: usar el horizontal o el favicon.
+- **Área de respeto:** alrededor de todo el logo, un espacio libre igual al
+  grosor del trazo vertical de la D.
+- **Nunca:** deformarlo, cambiar los colores, agregarle sombras o volver a
+  ponerle la textura de concreto.

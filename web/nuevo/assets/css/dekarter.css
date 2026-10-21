@@ -6,8 +6,9 @@
 
 :root {
   /* Marca */
-  --azul: #163a7d;
-  --azul-osc: #102a5a;
+  /* Azul tomado del logo de la empresa (texto «MAESTRANZA DEKARTER SPA») */
+  --azul: #0d3857;
+  --azul-osc: #082840;
   --azul-claro: #e8edf6;
   --bronce: #a9762f;
   --bronce-claro: #d8a55f;
@@ -169,25 +170,9 @@ a:hover { color: var(--azul-osc); }
   min-height: 74px;
 }
 
-.marca { display: flex; align-items: center; gap: 12px; text-decoration: none; margin-right: auto; }
-.marca img { width: 36px; height: 39px; }
-.marca-texto { display: flex; flex-direction: column; line-height: 1; }
-.marca-nombre {
-  font-family: var(--fuente-titulo);
-  font-weight: 800;
-  font-size: 1.32rem;
-  letter-spacing: -.035em;
-  color: var(--azul);
-}
-.marca-bajada {
-  font-family: var(--fuente-dato);
-  font-size: .6rem;
-  font-weight: 600;
-  letter-spacing: .28em;
-  text-transform: uppercase;
-  color: var(--bronce);
-  margin-top: 3px;
-}
+.marca { display: flex; align-items: center; gap: 12px; text-decoration: none; margin-right: auto; flex: none; }
+.marca img { width: auto; height: 46px; max-width: none; }
+@media (max-width: 420px) { .marca img { height: 38px; } }
 
 .nav-principal { display: flex; align-items: center; gap: 2px; }
 .nav-principal a {
@@ -521,9 +506,8 @@ a:hover { color: var(--azul-osc); }
 .pie-grilla { display: grid; gap: 34px; }
 @media (min-width: 780px) { .pie-grilla { grid-template-columns: 1.4fr 1fr 1fr; gap: 44px; } }
 .pie-marca { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
-.pie-marca img { width: 34px; height: 37px; }
-.pie-marca .marca-nombre { color: var(--blanco); }
-.sitio-pie h4 {
+.pie-marca img { width: auto; height: 48px; }
+.pie-marca .sitio-pie h4 {
   color: var(--blanco);
   font-family: var(--fuente-dato);
   font-size: .72rem;

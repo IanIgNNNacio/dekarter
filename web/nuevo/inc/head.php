@@ -33,7 +33,7 @@ $negocio = [
     'telephone'   => $DK['fono_e164'],
     'email'       => $DK['email'],
     'image'       => abs_url('assets/img/avatar-dekarter.svg'),
-    'logo'        => abs_url('assets/img/marca-dekarter.svg'),
+    'logo'        => abs_url('assets/img/logo-dekarter.svg'),
     'address'     => [
         '@type'           => 'PostalAddress',
         'streetAddress'   => $DK['calle'],
@@ -119,7 +119,7 @@ $jsonld = json_encode(
 
 <link rel="icon" href="<?= e(img('favicon.svg')) ?>" type="image/svg+xml">
 <link rel="apple-touch-icon" href="<?= e(img('avatar-dekarter.svg')) ?>">
-<meta name="theme-color" content="#163a7d">
+<meta name="theme-color" content="#0d3857">
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>

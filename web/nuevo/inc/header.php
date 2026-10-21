@@ -13,12 +13,8 @@ function nav_actual(string $archivo, string $actual): string
   <div class="contenedor cabecera-fila">
 
     <a class="marca" href="<?= e(u()) ?>">
-      <img src="<?= e(img('marca-dekarter.svg')) ?>" width="36" height="39"
-           alt="" aria-hidden="true">
-      <span class="marca-texto">
-        <span class="marca-nombre">DEKARTER</span>
-        <span class="marca-bajada">Maestranza</span>
-      </span>
+      <img src="<?= e(img('logo-dekarter-horizontal.svg')) ?>" width="185" height="44"
+           alt="<?= e($DK['razon_social']) ?> — inicio">
     </a>
 
     <button class="menu-boton" type="button"
