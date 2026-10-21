@@ -25,3 +25,6 @@ web/nuevo/var/
 # Descargas temporales del FTP
 *.zip
 *.tar.gz
+
+# Comprobaciones temporales de PHP: nunca al repo
+web/chk-*.php
