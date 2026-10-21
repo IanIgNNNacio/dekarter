@@ -6,27 +6,30 @@ Uso:
     python web\\herramientas\\desplegar_raiz.py            # ensayo: muestra qué haría, no toca nada
     python web\\herramientas\\desplegar_raiz.py --aplicar  # lo hace de verdad
 
-Usa la conexión «Dekarter» guardada en FileZilla. La contraseña se lee y se usa
-dentro del proceso: no se imprime ni se escribe en ningún lado.
+Credenciales, en este orden:
+  1. Una cuenta FTP dedicada, en variables de entorno:
+       DK_FTP_USER, DK_FTP_PASS   (obligatorias)
+       DK_FTP_HOST                (por omisión 162.241.62.4)
+       DK_FTP_RAIZ                (por omisión public_html; poner "." si la
+                                   cuenta está limitada a public_html)
+  2. Si no están, la conexión «Dekarter» guardada en FileZilla. Con
+     --sin-filezilla ese respaldo queda prohibido y el script se detiene.
 
-Qué hace, en este orden (pensado para que el sitio quede caído el menor tiempo
-posible, del orden de un segundo):
+La contraseña se usa dentro del proceso: no se imprime ni se escribe.
 
-  1. Crea /respaldo-sitio-anterior-AAAAMMDD-HHMM/ FUERA de public_html, donde
-     ningún navegador llega.
-  2. Mueve ahí los archivos del sitio viejo: index.php, contacto.php,
-     indexfinal3.html, styles.css, error_log y el .htaccess.
-  3. Sube index.php nuevo primero, y después el resto del sitio.
-  4. Sube el .htaccess nuevo al final, cuando ya están todos los .php que nombra.
+Qué hace, en este orden (para que el sitio quede caído del orden de un segundo):
+  1. Crea una carpeta de respaldo. Fuera de public_html si la cuenta la ve; si
+     la cuenta está limitada a public_html, adentro, como _respaldo-..., que el
+     .htaccess nuevo bloquea para los navegadores.
+  2. Mueve ahí el sitio viejo: index.php, contacto.php, indexfinal3.html,
+     styles.css, error_log y .htaccess.
+  3. Sube index.php nuevo primero, después el resto.
+  4. Sube el .htaccess nuevo al final, cuando ya existen los .php que nombra.
   5. Deja var/ con permiso 755.
-  6. Borra public_html/nuevo/, que era la copia de prueba.
+  6. Borra nuevo/, la copia de prueba.
 
-No toca nunca:  public_html/php.ini (mitigación de PHP),  public_html/images/
-(Google tiene esas fotos indexadas),  ni nada fuera de public_html salvo crear
-la carpeta de respaldo.
-
-Si una subida falla, se detiene ANTES de subir el .htaccess y de borrar
-nuevo/, y dice exactamente en qué quedó.
+No toca nunca php.ini (mitigación de PHP) ni images/ (fotos indexadas).
+Si una subida falla, se detiene antes del .htaccess y del borrado de nuevo/.
 """
 
 import base64
@@ -38,24 +41,39 @@ import xml.etree.ElementTree as ET
 
 AQUI = os.path.dirname(os.path.abspath(__file__))
 LOCAL = os.path.normpath(os.path.join(AQUI, "..", "nuevo"))
-RAIZ = "public_html"
+
+RAIZ = os.environ.get("DK_FTP_RAIZ", "public_html").strip("/") or "."
 
 VIEJOS = ["index.php", "contacto.php", "indexfinal3.html", "styles.css", "error_log", ".htaccess"]
-NO_SUBIR_EXT = (".md",)          # documentación interna: no va al servidor
+NO_SUBIR_EXT = (".md",)
 NO_TOCAR = {"php.ini", "images"}
 
 APLICAR = "--aplicar" in sys.argv
 
 
-def log(msg):
+def log(msg=""):
     print(msg, flush=True)
+
+
+def ruta(*partes):
+    """Une partes de una ruta remota, ignorando vacías y '.'."""
+    return "/".join(p for p in partes if p and p != ".")
 
 
 # ---------------------------------------------------------------- conexión --
 
 def credenciales():
-    ruta = os.path.join(os.environ["APPDATA"], "FileZilla", "sitemanager.xml")
-    for s in ET.parse(ruta).iter("Server"):
+    if os.environ.get("DK_FTP_USER") and os.environ.get("DK_FTP_PASS"):
+        return (os.environ.get("DK_FTP_HOST", "162.241.62.4"),
+                int(os.environ.get("DK_FTP_PORT", "21")),
+                os.environ["DK_FTP_USER"], os.environ["DK_FTP_PASS"])
+
+    if "--sin-filezilla" in sys.argv:
+        sys.exit("Faltan DK_FTP_USER y DK_FTP_PASS. Con --sin-filezilla no se leen "
+                 "las contraseñas guardadas de FileZilla.")
+
+    archivo = os.path.join(os.environ["APPDATA"], "FileZilla", "sitemanager.xml")
+    for s in ET.parse(archivo).iter("Server"):
         if (s.findtext("Name") or "").strip() == "Dekarter":
             p = s.find("Pass")
             pw = p.text or ""
@@ -79,35 +97,35 @@ def conectar():
         f.login(user, pw)
         modo = "FTP sin cifrar"
     f.encoding = "utf-8"
-    return f, modo
+    return f, modo, user
 
 
 # --------------------------------------------------------------- ayudantes --
 
-def listar(f, ruta):
-    """Nombres dentro de una carpeta remota (sin . ni ..)."""
+def listar(f, carpeta):
+    """Nombres dentro de una carpeta remota. Ojo: muchos servidores no muestran
+    los ocultos (.htaccess); para esos se usa existe()."""
     try:
-        return {os.path.basename(n.rstrip("/")) for n in f.nlst(ruta)} - {".", ".."}
+        return {os.path.basename(n.rstrip("/")) for n in f.nlst(carpeta or ".")} - {".", ".."}
     except ftplib.error_perm:
         return set()
 
 
-def existe(f, ruta):
-    """¿Existe ese archivo? Se pregunta por nombre (SIZE): los listados FTP de
-    muchos servidores esconden los archivos que empiezan con punto, como
-    .htaccess, y fiarse del listado haría pisar el .htaccess viejo sin
-    respaldarlo."""
+def existe(f, archivo):
+    """Comprueba un archivo por nombre (SIZE), no por el listado, porque el
+    listado esconde los archivos que empiezan con punto. Fiarse del listado
+    habría pisado el .htaccess viejo sin respaldarlo."""
     try:
-        f.size(ruta)
+        f.size(archivo)
         return True
     except ftplib.all_errors:
         return False
 
 
-def es_carpeta(f, ruta):
+def es_carpeta(f, carpeta):
     actual = f.pwd()
     try:
-        f.cwd(ruta)
+        f.cwd(carpeta)
         return True
     except ftplib.error_perm:
         return False
@@ -115,44 +133,43 @@ def es_carpeta(f, ruta):
         f.cwd(actual)
 
 
-def crear_carpeta(f, ruta):
+def crear_carpeta(f, carpeta):
     if APLICAR:
         try:
-            f.mkd(ruta)
+            f.mkd(carpeta)
         except ftplib.error_perm as e:
-            if not str(e).startswith("550"):
+            if not str(e).startswith("550"):    # 550 = ya existe
                 raise
 
 
-def borrar_arbol(f, ruta):
-    # Los ocultos no salen en el listado: se borran por nombre, si están.
+def borrar_arbol(f, carpeta):
     for oculto in (".htaccess", ".user.ini"):
-        if existe(f, ruta + "/" + oculto):
-            f.delete(ruta + "/" + oculto)
-    for nombre in listar(f, ruta):
-        hijo = ruta + "/" + nombre
+        if existe(f, ruta(carpeta, oculto)):
+            f.delete(ruta(carpeta, oculto))
+    for nombre in listar(f, carpeta):
+        hijo = ruta(carpeta, nombre)
         if es_carpeta(f, hijo):
             borrar_arbol(f, hijo)
         else:
             f.delete(hijo)
-    f.rmd(ruta)
+    f.rmd(carpeta)
 
 
 def archivos_locales():
-    """Lista (local, remota) de todo lo que hay que subir, sin index.php ni .htaccess."""
+    """(local, remota) de todo lo que se sube, sin index.php ni .htaccess, que
+    van aparte para respetar el orden."""
     salida = []
-    for carpeta, subcarpetas, archivos in os.walk(LOCAL):
+    for carpeta, _, archivos in os.walk(LOCAL):
         rel = os.path.relpath(carpeta, LOCAL).replace("\\", "/")
         rel = "" if rel == "." else rel
         if rel == "var" or rel.startswith("var/"):
-            continue        # var/ se crea vacía: su contenido lo genera el servidor
+            continue                    # var/ se crea vacía en el servidor
         for a in sorted(archivos):
             if a.endswith(NO_SUBIR_EXT):
                 continue
-            remota = "/".join(x for x in (RAIZ, rel, a) if x)
-            if remota in (RAIZ + "/index.php", RAIZ + "/.htaccess"):
+            if rel == "" and a in ("index.php", ".htaccess"):
                 continue
-            salida.append((os.path.join(carpeta, a), remota))
+            salida.append((os.path.join(carpeta, a), ruta(RAIZ, rel, a)))
     return salida
 
 
@@ -174,75 +191,80 @@ def main():
                else "ENSAYO: no se modifica nada. Para hacerlo: --aplicar"))
     log("=" * 64)
 
-    f, modo = conectar()
-    log(f"\nConectado por {modo}.")
+    f, modo, usuario = conectar()
+    log(f"\nConectado por {modo} como {usuario}. Raíz del sitio para esta cuenta: '{RAIZ}'")
 
-    en_raiz = listar(f, RAIZ)
+    en_raiz = listar(f, "" if RAIZ == "." else RAIZ)
     if not en_raiz:
-        sys.exit("No pude leer public_html. No sigo.")
-    log(f"public_html tiene {len(en_raiz)} elementos.")
+        sys.exit("No pude leer la carpeta del sitio. No sigo.")
+    if "index.php" not in en_raiz and not existe(f, ruta(RAIZ, "index.php")):
+        sys.exit("No hay index.php en la raíz del sitio: ¿DK_FTP_RAIZ es correcto? No sigo.")
+    log(f"La raíz del sitio tiene {len(en_raiz)} elementos visibles.")
     for intocable in sorted(NO_TOCAR & en_raiz):
         log(f"  · {intocable}: se deja tal cual")
 
     sello = datetime.datetime.now().strftime("%Y%m%d-%H%M")
-    respaldo = f"respaldo-sitio-anterior-{sello}"
+    respaldo = (ruta(RAIZ, f"_respaldo-sitio-anterior-{sello}") if RAIZ == "."
+                else f"respaldo-sitio-anterior-{sello}")
     subidas = archivos_locales()
-    carpetas = sorted({r.rsplit("/", 1)[0] for _, r in subidas} | {RAIZ + "/var"}, key=len)
+    carpetas = sorted({r.rsplit("/", 1)[0] for _, r in subidas if "/" in r}
+                      | {ruta(RAIZ, "var")}, key=len)
 
     # 1-2. respaldo
-    log(f"\n[1] Carpeta de respaldo fuera de public_html: /{respaldo}/")
+    log(f"\n[1] Carpeta de respaldo: /{respaldo}/")
     crear_carpeta(f, respaldo)
     log("[2] Mover el sitio viejo al respaldo:")
     for v in VIEJOS:
-        if existe(f, f"{RAIZ}/{v}"):
+        origen = ruta(RAIZ, v)
+        if existe(f, origen):
             log(f"      {v}")
             if APLICAR:
-                f.rename(f"{RAIZ}/{v}", f"{respaldo}/{v}")
+                f.rename(origen, ruta(respaldo, v))
         else:
             log(f"      {v}  (no está, se omite)")
 
     # 3. subir
     log(f"\n[3] Subir el sitio nuevo: index.php + {len(subidas)} archivos")
     for c in carpetas:
-        if c != RAIZ:
+        if c not in (RAIZ, "."):
             crear_carpeta(f, c)
     fallas = []
-    for local, remota in [(os.path.join(LOCAL, "index.php"), RAIZ + "/index.php")] + subidas:
+    for local, remota in [(os.path.join(LOCAL, "index.php"), ruta(RAIZ, "index.php"))] + subidas:
         try:
             subir(f, local, remota)
         except Exception as e:
-            fallas.append((remota, str(e)))
+            fallas.append(remota)
             log(f"      FALLÓ {remota}: {e}")
     if fallas:
-        log(f"\n{len(fallas)} subidas fallaron. Me detengo acá: NO subo el .htaccess ni borro nuevo/.")
-        log(f"El sitio viejo está entero en /{respaldo}/. Corre el script de nuevo para reintentar.")
+        log(f"\n{len(fallas)} subidas fallaron. Me detengo: NO subo el .htaccess ni borro nuevo/.")
+        log(f"El sitio viejo está entero en /{respaldo}/. Correr de nuevo para reintentar.")
         f.quit()
         sys.exit(1)
     log("      todo subido" if APLICAR else "      (ensayo)")
 
     # 4. .htaccess al final
     log("\n[4] Subir .htaccess nuevo")
-    subir(f, os.path.join(LOCAL, ".htaccess"), RAIZ + "/.htaccess")
+    subir(f, os.path.join(LOCAL, ".htaccess"), ruta(RAIZ, ".htaccess"))
 
     # 5. permisos de var/
     log("[5] var/ con permiso 755")
     if APLICAR:
         try:
-            f.sendcmd(f"SITE CHMOD 755 {RAIZ}/var")
+            f.sendcmd("SITE CHMOD 755 " + ruta(RAIZ, "var"))
         except ftplib.error_perm as e:
             log(f"      no se pudo fijar el permiso ({e}). Hacerlo a mano en FileZilla.")
 
     # 6. borrar la copia de prueba
-    log("[6] Borrar public_html/nuevo/ (copia de prueba)")
+    log("[6] Borrar nuevo/ (copia de prueba)")
     if "nuevo" in en_raiz:
         if APLICAR:
-            borrar_arbol(f, RAIZ + "/nuevo")
+            borrar_arbol(f, ruta(RAIZ, "nuevo"))
     else:
         log("      no existe, se omite")
 
     f.quit()
-    log("\n" + ("LISTO. Abre https://dekarter.cl para comprobar." if APLICAR
-               else "Ensayo terminado. Si todo se ve bien, corre lo mismo con --aplicar."))
+    log("\n" + ("LISTO. Abrir https://dekarter.cl para comprobar." if APLICAR
+               else "Ensayo terminado. Si todo se ve bien, correr lo mismo con --aplicar."))
     log(f"Para volver atrás: los archivos viejos están en /{respaldo}/.")
 
 

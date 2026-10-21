@@ -74,9 +74,10 @@ DirectoryIndex index.php
     RewriteRule ^([^/.]+)/?$ $1.php [L]
 
     # -------------------------------------------------------------------------
-    #  6. Nada de acceso directo a los includes ni a la carpeta de trabajo
+    #  6. Nada de acceso directo a los includes, la carpeta de trabajo
+    #     ni al respaldo del sitio anterior
     # -------------------------------------------------------------------------
-    RewriteRule ^(inc|var)/ - [F,L]
+    RewriteRule ^(inc|var|_respaldo[^/]*)/ - [F,L]
 </IfModule>
 
 ErrorDocument 404 /404.php
