@@ -13,5 +13,6 @@ Allow: /
 Disallow: /gracias
 Disallow: /inc/
 Disallow: /var/
+Disallow: /cotizador/
 
 Sitemap: https://dekarter.cl/sitemap.xml

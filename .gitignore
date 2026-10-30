@@ -32,3 +32,6 @@ web/chk-*.php
 # Python
 __pycache__/
 *.pyc
+
+# Hash de la contraseña del cotizador: lo genera clave_cotizador.py
+web/nuevo/inc/cotizador.local.php

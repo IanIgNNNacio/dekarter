@@ -32,6 +32,12 @@ date_default_timezone_set('America/Santiago');
  * archivos funcionan en /nuevo/ y en /, sin tocar una línea.
  */
 $dk_dir = str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'] ?? '/index.php'));
+
+// El cotizador vive en una subcarpeta del sitio, pero es parte del mismo sitio:
+// su base es la del sitio, no la suya. Sin esto se creería un borrador.
+if (defined('DK_SUBAPP')) {
+    $dk_dir = dirname($dk_dir);
+}
 $dk_base = rtrim($dk_dir, '/') . '/';
 
 // Red de seguridad: SCRIPT_NAME lo arma el servidor con la ruta del archivo ya

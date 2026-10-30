@@ -67,11 +67,12 @@ DirectoryIndex index.php
     RewriteRule ^ /%1 [R=301,L]
 
     # -------------------------------------------------------------------------
-    #  5. URLs limpias: /contacto sirve contacto.php
+    #  5. URLs limpias: /contacto sirve contacto.php, y también dentro de
+    #     subcarpetas: /cotizador/editar sirve cotizador/editar.php
     #     Sólo si el .php existe de verdad; si no, sigue de largo hasta el 404.
     # -------------------------------------------------------------------------
     RewriteCond %{REQUEST_FILENAME}\.php -f
-    RewriteRule ^([^/.]+)/?$ $1.php [L]
+    RewriteRule ^([^.]+?)/?$ $1.php [L]
 
     # -------------------------------------------------------------------------
     #  6. Nada de acceso directo a los includes, la carpeta de trabajo
